@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sprint Jira Report</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    .card { padding: 1.5rem; border: 1px solid #ccc; border-radius: 8px; max-width: 500px; }
+    button { margin-right: .5rem; }
+    input { box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    label { font-weight: bold; color: #333; }
+  </style>
+  <!-- React + ReactDOM (UMD builds) -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Babel for in-browser JSX transform (dev only) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [jiraHost, setJiraHost] = useState("");
+      const [email, setEmail] = useState("");
+      const [jiraToken, setJiraToken] = useState("");
+      const [boardId, setBoardId] = useState("");
+      const [sprintId, setSprintId] = useState("");
+      const [rememberMe, setRememberMe] = useState(false);
+      const [reportData, setReportData] = useState(null);
+
+      // Load saved data on component mount
+      useEffect(() => {
+        const savedJiraHost = localStorage.getItem('jiraHost');
+        const savedEmail = localStorage.getItem('email');
+        const savedBoardId = localStorage.getItem('boardId');
+        
+        if (savedJiraHost) setJiraHost(savedJiraHost);
+        if (savedEmail) setEmail(savedEmail);
+        if (savedBoardId) setBoardId(savedBoardId);
+        
+        // Set remember me checkbox if any data was loaded
+        if (savedJiraHost || savedEmail || savedBoardId) {
+          setRememberMe(true);
+        }
+      }, []);
+
+      const isFormValid = jiraHost.trim() && email.trim() && jiraToken.trim() && boardId.trim() && sprintId.trim();
+
+      const generateReport = async () => {
+        if (!jiraHost.trim() || !email.trim() || !jiraToken.trim() || !boardId.trim() || !sprintId.trim()) {
+          alert("Please fill in all fields");
+          return;
+        }
+
+        const url = `${jiraHost}/rest/greenhopper/1.0/rapid/charts/sprintreport?rapidViewId=${boardId}&sprintId=${sprintId}`;
+        
+        try {
+          const credentials = btoa(`${email}:${jiraToken}`);
+          
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Basic ${credentials}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Sprint report data:", data);
+          
+          // Set report data to display
+          setReportData(data);
+          
+          // Save data if "Remember me" is checked (excluding sensitive token)
+          if (rememberMe) {
+            localStorage.setItem('jiraHost', jiraHost);
+            localStorage.setItem('email', email);
+            localStorage.setItem('boardId', boardId);
+            console.log("Saved form data to localStorage (token excluded for security)");
+          }
+          
+          alert("Report generated successfully! Data displayed below.");
+          
+        } catch (error) {
+          console.error("Error generating report:", error);
+          alert(`Error generating report: ${error.message}`);
+        }
+      };
+
+      return (
+        <>
+          <div className="card">
+            <h2>Sprint Jira Report</h2>
+            <div style={{ margin: "1rem 0" }}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", marginBottom: "0.5rem" }}>Jira Host</label>
+                <input
+                  type="url"
+                  placeholder="https://yourcompany.atlassian.net"
+                  value={jiraHost}
+                  onChange={e => setJiraHost(e.target.value)}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
+                />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
+                  <span>Email</span>
+                  <span 
+                    style={{ 
+                      marginLeft: "0.5rem", 
+                      cursor: "pointer", 
+                      color: "#007bff",
+                      fontSize: "0.9em"
+                    }}
+                    title="Use the email address connected to your Atlassian account"
+                  >
+                    ℹ️
+                  </span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
+                />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "flex", alignItems: "center", marginBottom: "0.5rem" }}>
+                  <span>Jira Token</span>
+                  <span 
+                    style={{ 
+                      marginLeft: "0.5rem", 
+                      cursor: "pointer", 
+                      color: "#007bff",
+                      fontSize: "0.9em"
+                    }}
+                    title="You can create and manage API tokens at: https://id.atlassian.com/manage-profile/security/api-tokens"
+                    onClick={() => window.open('https://id.atlassian.com/manage-profile/security/api-tokens', '_blank')}
+                  >
+                    ℹ️
+                  </span>
+                </label>
+                <input
+                  type="password"
+                  placeholder="Enter your Jira token"
+                  value={jiraToken}
+                  onChange={e => setJiraToken(e.target.value)}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
+                />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", marginBottom: "0.5rem" }}>Board ID</label>
+                <input
+                  type="number"
+                  placeholder="Enter board ID"
+                  value={boardId}
+                  onChange={e => setBoardId(e.target.value)}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
+                />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "block", marginBottom: "0.5rem" }}>Sprint ID</label>
+                <input
+                  type="number"
+                  placeholder="Enter sprint ID"
+                  value={sprintId}
+                  onChange={e => setSprintId(e.target.value)}
+                  style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem" }}
+                />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label style={{ display: "flex", alignItems: "center", fontWeight: "normal" }}>
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                    style={{ marginRight: "0.5rem" }}
+                  />
+                  Remember me
+                </label>
+              </div>
+              {rememberMe && (
+                <div style={{ 
+                  padding: "0.75rem", 
+                  backgroundColor: "#e8f5e8", 
+                  border: "1px solid #28a745", 
+                  borderRadius: "4px", 
+                  marginBottom: "1rem",
+                  fontSize: "0.9em",
+                  color: "#155724"
+                }}>
+                  ℹ️ Your Jira Host, Email, and Board ID will be saved locally for future use. (Jira Token excluded for security)
+                </div>
+              )}
+              <button 
+                onClick={generateReport} 
+                disabled={!isFormValid}
+                style={{ 
+                  width: "100%", 
+                  padding: "0.75rem", 
+                  backgroundColor: isFormValid ? "#007bff" : "#ccc", 
+                  color: "white", 
+                  border: "none", 
+                  borderRadius: "4px", 
+                  cursor: isFormValid ? "pointer" : "not-allowed",
+                  opacity: isFormValid ? 1 : 0.6
+                }}
+              >
+                Generate Report
+              </button>
+            </div>
+          </div>
+          
+          {reportData && (
+            <div className="card" style={{ marginTop: "1rem" }}>
+              <h3>Sprint Report Summary</h3>
+              <div style={{ display: "grid", gap: "1rem" }}>
+                <div style={{ padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "4px", border: "1px solid #e9ecef" }}>
+                  <strong>Completed Issues Initial Estimate:</strong>
+                  <div style={{ fontSize: "1.2em", color: "#28a745", marginTop: "0.25rem" }}>
+                    {reportData.contents?.completedIssuesInitialEstimateSum?.value || 'N/A'}
+                  </div>
+                </div>
+                <div style={{ padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "4px", border: "1px solid #e9ecef" }}>
+                  <strong>Completed Issues Final Estimate:</strong>
+                  <div style={{ fontSize: "1.2em", color: "#28a745", marginTop: "0.25rem" }}>
+                    {reportData.contents?.completedIssuesEstimateSum?.value || 'N/A'}
+                  </div>
+                </div>
+                <div style={{ padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "4px", border: "1px solid #e9ecef" }}>
+                  <strong>Not Completed Issues Initial Estimate:</strong>
+                  <div style={{ fontSize: "1.2em", color: "#dc3545", marginTop: "0.25rem" }}>
+                    {reportData.contents?.issuesNotCompletedInitialEstimateSum?.value || 'N/A'}
+                  </div>
+                </div>
+                <div style={{ padding: "0.75rem", backgroundColor: "#f8f9fa", borderRadius: "4px", border: "1px solid #e9ecef" }}>
+                  <strong>Not Completed Issues Final Estimate:</strong>
+                  <div style={{ fontSize: "1.2em", color: "#dc3545", marginTop: "0.25rem" }}>
+                    {reportData.contents?.issuesNotCompletedEstimateSum?.value || 'N/A'}
+                  </div>
+                </div>
+                <div style={{ padding: "0.75rem", backgroundColor: "#e8f4f8", borderRadius: "4px", border: "2px solid #007bff" }}>
+                  <strong>All Issues Total Estimate:</strong>
+                  <div style={{ fontSize: "1.4em", color: "#007bff", fontWeight: "bold", marginTop: "0.25rem" }}>
+                    {reportData.contents?.allIssuesEstimateSum?.value || 'N/A'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("app"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
