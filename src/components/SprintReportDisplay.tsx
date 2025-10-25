@@ -94,9 +94,10 @@ interface TicketListProps {
   color: string;
   emptyMessage: string;
   showStoryPoints?: boolean;
+  issueKeysAddedDuringSprint?: Record<string, any>;
 }
 
-function TicketList({ title, tickets, icon, color, emptyMessage, showStoryPoints = true }: TicketListProps) {
+function TicketList({ title, tickets, icon, color, emptyMessage, showStoryPoints = true, issueKeysAddedDuringSprint = {} }: TicketListProps) {
   const totalStoryPoints = showStoryPoints ? tickets.reduce((sum, ticket) => {
     const storyPoints = ticket.currentEstimateStatistic?.statFieldValue?.value || 
                        ticket.estimateStatistic?.statFieldValue?.value || 0;
@@ -183,6 +184,22 @@ function TicketList({ title, tickets, icon, color, emptyMessage, showStoryPoints
                               size="small" 
                               variant="outlined"
                               sx={{ fontSize: '0.7rem', height: '20px' }}
+                            />
+                          )}
+                          {issueKeysAddedDuringSprint[ticket.key] && (
+                            <Chip 
+                              label="Added Mid-Sprint" 
+                              size="small" 
+                              sx={{ 
+                                fontSize: '0.7rem', 
+                                height: '20px',
+                                backgroundColor: '#ff9800',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                '& .MuiChip-label': {
+                                  px: 1
+                                }
+                              }}
                             />
                           )}
                         </Box>
@@ -551,6 +568,7 @@ export function SprintReportDisplay({
                       color="#2e7d32"
                       emptyMessage="No tickets were completed in this sprint."
                       showStoryPoints={true}
+                      issueKeysAddedDuringSprint={issueKeysAddedDuringSprint}
                     />
                   </Box>
 
@@ -563,6 +581,7 @@ export function SprintReportDisplay({
                       color="#d32f2f"
                       emptyMessage="All tickets were completed - excellent work!"
                       showStoryPoints={true}
+                      issueKeysAddedDuringSprint={issueKeysAddedDuringSprint}
                     />
                   </Box>
 
