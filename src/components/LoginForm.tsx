@@ -37,7 +37,7 @@ export function LoginForm({
     <Paper elevation={3} sx={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <Typography variant="h5" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
         <LoginIcon color="primary" />
-        Login to Jira
+        Access Jira
       </Typography>
       
       <TextField
