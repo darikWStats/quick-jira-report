@@ -178,9 +178,6 @@ export function JiraReportApp() {
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-    // Clear data when switching tabs
-    setReportData(null);
-    setVelocityData(null);
   };
 
   const handleLogin = async () => {
