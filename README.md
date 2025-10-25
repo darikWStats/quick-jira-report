@@ -1,73 +1,130 @@
 # Quick Jira Report
 
-A web application for generating Jira sprint reports with a clean, modular Node.js architecture.
+A modern web application for generating comprehensive Jira sprint reports with advanced analytics, productivity metrics, and velocity analysis.
 
 ## Features
 
-- Generate sprint reports from Jira API
-- Modern Material-UI (MUI v7) interface with React
+### 📊 **Advanced Sprint Analytics**
+- Comprehensive sprint report generation from Jira API
+- Velocity analysis with historical trend tracking
+- Productivity metrics and team performance analysis
+- Sprint-by-sprint breakdown with dev days tracking
+- Next sprint estimation based on historical data
+
+### 🎯 **Sprint Health Insights**
+- Scope discipline tracking (mid-sprint additions)
+- Initial work completion vs. scope creep analysis
+- Story points breakdown with visual indicators
+- Issue tracking with categorized ticket details
+
+### 💻 **Modern Technology Stack**
+- **Frontend:** React 19.2.0 + TypeScript
+- **UI Framework:** Material-UI (MUI) v7 with custom theming
+- **Build Tool:** Vite 5.4.21 with hot module reloading
+- **Backend:** Express.js with modular architecture
+- **Development:** Full TypeScript support with modern tooling
+
+### 🎨 **User Experience**
+- Responsive Material Design interface
 - Real-time form validation and error handling
-- Beautiful, responsive design with Material Design principles
-- Local storage for remembering user preferences (excluding sensitive data)
-- Modular code structure with separation of concerns
-- RESTful API backend
-- Professional-grade UI components and theming
+- Copy-paste ready sprint summaries for presentations
+- Excel/CSV export functionality
+- Local storage for user preferences (non-sensitive data)
 
 ## Project Structure
 
 ```
 quick-jira-report/
-├── server.js                 # Express server entry point
-├── package.json              # Project dependencies and scripts
+├── server.js                     # Express server entry point
+├── package.json                  # Project dependencies and scripts
+├── vite.config.js               # Vite configuration
 ├── routes/
-│   └── api.js               # API routes
+│   └── api.js                   # API routes
 ├── services/
-│   └── jiraService.js       # Jira API integration service
-├── public/                  # Static files served by Express
-│   ├── index.html          # Main HTML file with Material-UI setup
-│   ├── css/
-│   │   └── styles.css      # Legacy application styles
-│   └── js/                 # Client-side JavaScript modules
-│       ├── mui-app.js      # Material-UI React application (main UI)
-│       ├── app.js          # Legacy vanilla JS application
-│       ├── api.js          # API service for backend communication
-│       ├── storage.js      # localStorage utility
-│       ├── validation.js   # Form validation utilities
-│       └── reportFormatter.js # Report formatting utilities
-├── example_response.json    # Sample Jira API response
-└── postman-test-script.js  # Postman testing script
+│   └── jiraService.js           # Jira API integration service
+├── src/                         # Modern React + TypeScript source
+│   ├── main.tsx                 # React application entry point
+│   ├── index.html               # HTML template
+│   ├── components/              # Modular React components
+│   │   ├── JiraReportApp.tsx    # Main application orchestrator
+│   │   ├── LoginForm.tsx        # Authentication form
+│   │   ├── ConfigurationStatus.tsx # Environment configuration
+│   │   ├── TabNavigation.tsx    # Tab navigation interface
+│   │   ├── VelocityAnalysisDisplay.tsx # Velocity analysis system
+│   │   ├── ProductivityAnalysis.tsx # Productivity metrics & estimation
+│   │   ├── SprintBreakdownCards.tsx # Individual sprint cards
+│   │   ├── SprintReportDisplay.tsx # Detailed sprint reports
+│   │   └── ProjectBoardSelection.tsx # Board/project selection
+│   ├── services/
+│   │   └── api.ts              # API service with TypeScript interfaces
+│   ├── utils/
+│   │   ├── validation.ts       # Form validation utilities
+│   │   └── storage.ts          # localStorage utility
+│   └── theme/
+│       └── theme.ts            # Material-UI theme configuration
+├── docs/                        # API documentation
+│   └── jira-velocity-api-options.ts # JIRA API reference
+├── suggestions/                 # Enhancement suggestions
+├── dist/                       # Built application (generated)
+├── example_response.json       # Sample Jira API response
+└── postman-test-script.js     # Postman testing script
 ```
 
 ## Installation
 
-1. Install dependencies:
+1. **Install dependencies:**
 ```bash
 npm install
 ```
 
-2. Start the development server:
+2. **Environment setup:**
 ```bash
-npm run dev
+cp .env.example .env
+# Edit .env with your configuration if needed
 ```
 
-Or start the production server:
+3. **Start development:**
 ```bash
+# Frontend development server (Vite)
+npm run dev
+
+# Backend development server (separate terminal)
+npm run dev:server
+```
+
+4. **Production build:**
+```bash
+# Build and serve production version
 npm start
 ```
 
-The application will be available at `http://localhost:3000`
+**Development URLs:**
+- Frontend: `http://localhost:5173` (Vite dev server)
+- Backend API: `http://localhost:3000` (Express server)
+
+**Production URL:**
+- Full application: `http://localhost:3000` (serves built frontend + API)
 
 ## Usage
 
+### 🔑 **Initial Setup**
 1. Open the application in your browser
 2. Fill in your Jira credentials:
-   - Jira Host (e.g., https://yourcompany.atlassian.net)
-   - Email (your Atlassian account email)
-   - Jira Token (create one at https://id.atlassian.com/manage-profile/security/api-tokens)
-   - Board ID (numeric ID of your Jira board)
-   - Sprint ID (numeric ID of the sprint)
+   - **Jira Host:** `https://yourcompany.atlassian.net`
+   - **Email:** Your Atlassian account email
+   - **API Token:** [Generate one here](https://id.atlassian.com/manage-profile/security/api-tokens)
+   - **Board ID:** Numeric ID of your Jira board
 3. Check "Remember me" to save non-sensitive data locally
-4. Click "Generate Report" to fetch and display the sprint report
+
+### 📊 **Generate Reports**
+1. **Velocity Analysis:** View historical sprint performance trends
+2. **Sprint Reports:** Select specific sprints for detailed analysis
+3. **Productivity Analysis:** Input dev days for capacity planning
+
+### 📋 **Export & Share**
+- **Copy Sprint Summary:** Presentation-ready format
+- **Excel Export:** CSV data for spreadsheet analysis
+- **Visual Insights:** Sprint health and scope discipline metrics
 
 ## API Endpoints
 
@@ -82,20 +139,51 @@ The application will be available at `http://localhost:3000`
 - Sensitive data (API tokens) not stored locally
 - CSP headers configured
 
-## Development
+## Architecture & Development
 
-The project uses a modern, modular architecture:
+### 🏗️ **Modern Architecture**
+- **Frontend:** React 19.2.0 + TypeScript with Vite build system
+- **Backend:** Express.js with modular route/service separation
+- **Component System:** 9 extracted, reusable TypeScript components
+- **State Management:** React hooks with TypeScript interfaces
+- **Styling:** Material-UI v7 with emotion-based custom theming
 
-- **Backend**: Express.js server with separate route and service layers
-- **Frontend**: React with Material-UI v7 components and modern design system
-- **UI Framework**: Material-UI (MUI) with custom theming and responsive design
-- **State Management**: React hooks for local state management
-- **Styling**: Material Design principles with emotion-based styling
-- **Storage**: localStorage utility for non-sensitive data persistence
-- **Security**: CSP headers and proper event handling
+### 🔧 **Development Features**
+- **Hot Module Reloading:** Instant updates during development
+- **TypeScript:** Full type safety across frontend and API interfaces  
+- **Modular Components:** Clean separation of concerns
+- **API Documentation:** Comprehensive JIRA API reference in `/docs`
+- **Security:** Helmet.js, CORS, CSP headers, input validation
+
+### 📈 **Analytics Capabilities**
+- **Velocity Tracking:** Historical sprint performance analysis
+- **Productivity Metrics:** Dev days tracking and capacity planning
+- **Scope Analysis:** Mid-sprint addition tracking and discipline metrics
+- **Team Health:** Completion quality and sprint management insights
 
 ## Scripts
 
-- `npm start` - Start production server
-- `npm run dev` - Start development server with nodemon
-- `npm run build` - Build assets (placeholder for future build process)
+- `npm start` - Build and start production server
+- `npm run dev` - Start Vite development server (frontend)
+- `npm run dev:server` - Start Express server with nodemon (backend)
+- `npm run build` - Build React application for production
+- `npm run preview` - Preview production build locally
+- `npm run serve` - Build and serve production version
+
+## Component Architecture
+
+The application features a modular component system with clear separation of concerns:
+
+| Component | Purpose | Lines | Key Features |
+|-----------|---------|--------|--------------|
+| `JiraReportApp.tsx` | Main orchestrator | 606 | State management, API integration |
+| `VelocityAnalysisDisplay.tsx` | Velocity analysis | 249 | Historical trends, team metrics |
+| `ProductivityAnalysis.tsx` | Productivity metrics | 312 | Dev days, capacity planning |
+| `SprintReportDisplay.tsx` | Detailed reports | 767 | Ticket analysis, export features |
+| `SprintBreakdownCards.tsx` | Sprint cards | 159 | Individual sprint metrics |
+| `LoginForm.tsx` | Authentication | 67 | Secure credential management |
+| `ConfigurationStatus.tsx` | Environment status | 67 | Configuration validation |
+| `TabNavigation.tsx` | Navigation | 32 | Clean tab interface |
+| `ProjectBoardSelection.tsx` | Board selection | - | Project/board management |
+
+**Total Architecture Transformation:** From 1,520-line monolith to 606-line orchestrator (60.1% reduction) with 9 focused, reusable components.
