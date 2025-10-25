@@ -575,6 +575,115 @@ export function SprintReportDisplay({
                   </Card>
                 </Box>
 
+                {/* Sprint Summary for Presentation */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                    📋 Sprint Summary (Copy & Paste)
+                  </Typography>
+                  <Card sx={{ bgcolor: '#f8f9fa' }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                          Presentation Format
+                        </Typography>
+                        <Tooltip title="Copy presentation summary to clipboard">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => {
+                              const summaryText = `Story Points - Completed: ${completedEstimateSum}
+Story Points - Total: ${allIssuesEstimateSum}
+Story Points - Added During Sprint: ${storyPointsAddedDuringSprint}
+Story Points - Initial (Planned): ${initialSprintStoryPoints}
+Story Points - Completed from Initial: ${completedStoryPointsFromInitialIssues}
+─────────────────────────────────
+Overall Story Points Completion: ${overallCompletionPercentage.toFixed(2)}%
+Initial Work Completion: ${initialWorkCompletionPercentage.toFixed(2)}%
+─────────────────────────────────
+Issues Added During Sprint: ${issuesAddedCount}
+Issues Not Completed: ${incompleteIssues.length}
+Issues Punted: ${puntedIssues.length}
+Issues Added Keys: ${Object.keys(issueKeysAddedDuringSprint).join(', ')}`;
+                              navigator.clipboard.writeText(summaryText);
+                            }}
+                          >
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                      
+                      {/* Console Output Style Display */}
+                      <Paper variant="outlined" sx={{ p: 2, bgcolor: '#ffffff', color: '#333333', borderRadius: 1, border: '2px solid #e3f2fd' }}>
+                        <Typography variant="caption" component="pre" sx={{ 
+                          fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                          whiteSpace: 'pre-wrap',
+                          fontSize: '0.75rem',
+                          lineHeight: 1.4,
+                          color: '#1976d2'
+                        }}>
+{`Story Points - Completed: ${completedEstimateSum}
+Story Points - Total: ${allIssuesEstimateSum}
+Story Points - Added During Sprint: ${storyPointsAddedDuringSprint}
+Story Points - Initial (Planned): ${initialSprintStoryPoints}
+Story Points - Completed from Initial: ${completedStoryPointsFromInitialIssues}
+
+Overall Story Points Completion: ${overallCompletionPercentage.toFixed(2)}%
+Initial Work Completion: ${initialWorkCompletionPercentage.toFixed(2)}%
+
+Issues Added During Sprint: ${issuesAddedCount}
+Issues Not Completed: ${incompleteIssues.length}
+Issues Punted: ${puntedIssues.length}
+Issues Added Keys: ${Object.keys(issueKeysAddedDuringSprint).join(', ')}`}
+                        </Typography>
+                      </Paper>
+                    </CardContent>
+                  </Card>
+                </Box>
+
+                {/* Excel/CSV Export */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                    📊 Excel/CSV Export
+                  </Typography>
+                  <Card sx={{ bgcolor: '#f0f8ff' }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                          Spreadsheet Ready Format
+                        </Typography>
+                        <Tooltip title="Copy Excel/CSV data to clipboard">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => {
+                              const excelData = `Sprint Name;Story Points Completed;Story Points Total;Overall Completion %;Story Points Added;Story Points Initial;Completed from Initial;Initial Work Completion %;Issues Added;Issues Incomplete;Issues Punted
+${reportData.sprint?.name || "N/A"};${completedEstimateSum};${allIssuesEstimateSum};${overallCompletionPercentage.toFixed(2)}%;${storyPointsAddedDuringSprint};${initialSprintStoryPoints};${completedStoryPointsFromInitialIssues};${initialWorkCompletionPercentage.toFixed(2)}%;${issuesAddedCount};${incompleteIssues.length};${puntedIssues.length}`;
+                              navigator.clipboard.writeText(excelData);
+                            }}
+                          >
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                      
+                      <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9ff', borderRadius: 1, border: '2px solid #e8eaf6' }}>
+                        <Typography variant="caption" component="pre" sx={{ 
+                          fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                          whiteSpace: 'pre-wrap',
+                          fontSize: '0.7rem',
+                          lineHeight: 1.3,
+                          color: '#3f51b5'
+                        }}>
+{`Sprint Name;Story Points Completed;Story Points Total;Overall Completion %;Story Points Added;Story Points Initial;Completed from Initial;Initial Work Completion %;Issues Added;Issues Incomplete;Issues Punted
+${reportData.sprint?.name || "N/A"};${completedEstimateSum};${allIssuesEstimateSum};${overallCompletionPercentage.toFixed(2)}%;${storyPointsAddedDuringSprint};${initialSprintStoryPoints};${completedStoryPointsFromInitialIssues};${initialWorkCompletionPercentage.toFixed(2)}%;${issuesAddedCount};${incompleteIssues.length};${puntedIssues.length}`}
+                        </Typography>
+                      </Paper>
+                      
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        💡 Paste directly into Excel, Google Sheets, or any spreadsheet application. Semicolons will automatically separate into columns.
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Box>
+
                 {/* Detailed Ticket Information */}
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
