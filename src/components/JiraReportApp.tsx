@@ -24,8 +24,6 @@ import {
   Badge,
   IconButton,
   Tooltip,
-  Tabs,
-  Tab,
   Card,
   CardContent
 } from '@mui/material';
@@ -37,6 +35,7 @@ import { theme } from '../theme/theme';
 import { ProjectBoardSelection } from './ProjectBoardSelection';
 import { LoginForm } from './LoginForm';
 import { ConfigurationStatus } from './ConfigurationStatus';
+import { TabNavigation } from './TabNavigation';
 
 // Material-UI Icons
 import LoginIcon from '@mui/icons-material/Login';
@@ -515,20 +514,7 @@ export function JiraReportApp() {
               />
 
               {/* Tab Navigation */}
-              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                <Tabs value={activeTab} onChange={handleTabChange} aria-label="jira analytics tabs">
-                  <Tab 
-                    icon={<AssessmentIcon />} 
-                    label="Sprint Report" 
-                    sx={{ minHeight: '64px' }}
-                  />
-                  <Tab 
-                    icon={<SpeedIcon />} 
-                    label="Team Velocity" 
-                    sx={{ minHeight: '64px' }}
-                  />
-                </Tabs>
-              </Box>
+              <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
               {/* Sprint Report Tab */}
               {activeTab === 0 && (
