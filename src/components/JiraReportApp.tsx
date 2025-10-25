@@ -387,25 +387,32 @@ export function JiraReportApp() {
         })
       );
 
+      // Sort sprints by start date (oldest first)
+      const sortedSprintReports = sprintReports.sort((a, b) => {
+        const dateA = a.sprint?.startDate ? new Date(a.sprint.startDate).getTime() : 0;
+        const dateB = b.sprint?.startDate ? new Date(b.sprint.startDate).getTime() : 0;
+        return dateA - dateB;
+      });
+
       // Calculate aggregate metrics
-      const totalStoryPoints = sprintReports.reduce((sum, sprint) => sum + sprint.completedStoryPoints, 0);
-      const totalSprints = sprintReports.length;
+      const totalStoryPoints = sortedSprintReports.reduce((sum, sprint) => sum + sprint.completedStoryPoints, 0);
+      const totalSprints = sortedSprintReports.length;
       const averageVelocity = totalSprints > 0 ? totalStoryPoints / totalSprints : 0;
-      const averageCompletionRate = sprintReports.reduce((sum, sprint) => sum + sprint.overallCompletionRate, 0) / totalSprints;
+      const averageCompletionRate = sortedSprintReports.reduce((sum, sprint) => sum + sprint.overallCompletionRate, 0) / totalSprints;
 
       const velocityData = {
         totalSprints,
         totalStoryPoints,
         averageVelocity,
         averageCompletionRate,
-        sprints: sprintReports,
+        sprints: sortedSprintReports,
         // Additional insights
         insights: {
-          scopeCreepTotal: sprintReports.reduce((sum, sprint) => sum + sprint.storyPointsAddedDuringSprint, 0),
-          averageScopeCreep: sprintReports.reduce((sum, sprint) => sum + sprint.storyPointsAddedDuringSprint, 0) / totalSprints,
-          averageInitialWorkCompletion: sprintReports.reduce((sum, sprint) => sum + sprint.initialWorkCompletionRate, 0) / totalSprints,
-          totalPuntedIssues: sprintReports.reduce((sum, sprint) => sum + sprint.puntedIssues, 0),
-          totalIncompleteIssues: sprintReports.reduce((sum, sprint) => sum + sprint.incompleteIssues, 0)
+          scopeCreepTotal: sortedSprintReports.reduce((sum, sprint) => sum + sprint.storyPointsAddedDuringSprint, 0),
+          averageScopeCreep: sortedSprintReports.reduce((sum, sprint) => sum + sprint.storyPointsAddedDuringSprint, 0) / totalSprints,
+          averageInitialWorkCompletion: sortedSprintReports.reduce((sum, sprint) => sum + sprint.initialWorkCompletionRate, 0) / totalSprints,
+          totalPuntedIssues: sortedSprintReports.reduce((sum, sprint) => sum + sprint.puntedIssues, 0),
+          totalIncompleteIssues: sortedSprintReports.reduce((sum, sprint) => sum + sprint.incompleteIssues, 0)
         }
       };
 
@@ -422,6 +429,22 @@ export function JiraReportApp() {
     } finally {
       setLoadingVelocity(false);
     }
+  };
+
+  // Handler for updating dev days for a specific sprint
+  const handleDevDaysChange = (sprintId: string, devDays: number) => {
+    if (!velocityData) return;
+    
+    const updatedVelocityData = {
+      ...velocityData,
+      sprints: velocityData.sprints.map((sprint: any) => 
+        sprint.sprintId === sprintId 
+          ? { ...sprint, devDaysAvailable: devDays }
+          : sprint
+      )
+    };
+    
+    setVelocityData(updatedVelocityData);
   };
 
   return (
@@ -1217,83 +1240,115 @@ export function JiraReportApp() {
                         <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
                           📊 Sprint-by-Sprint Breakdown
                         </Typography>
-                        <Box sx={{ display: 'grid', gap: 2 }}>
+                        <Box sx={{ display: 'grid', gap: 1.5 }}>
                           {velocityData.sprints.map((sprint: any, index: number) => (
-                            <Card key={sprint.sprintId} variant="outlined">
-                              <CardContent>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                  <Typography variant="h6">
+                            <Card key={sprint.sprintId} variant="outlined" sx={{ border: '1px solid #e0e0e0' }}>
+                              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                                  <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
                                     {sprint.sprint?.name || `Sprint ${index + 1}`}
                                   </Typography>
                                   <Chip 
                                     label={sprint.sprint?.state || 'Unknown'} 
                                     color={sprint.sprint?.state === 'closed' ? 'success' : 'default'}
                                     size="small"
+                                    sx={{ height: 20, fontSize: '0.75rem' }}
                                   />
                                 </Box>
-                                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 2, mt: 2 }}>
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
+                                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 1.5 }}>
+                                  <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                       Story Points
                                     </Typography>
-                                    <Typography variant="h6" color="primary">
-                                      {sprint.completedStoryPoints} / {sprint.totalStoryPoints}
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'primary.main', lineHeight: 1.2 }}>
+                                      {sprint.completedStoryPoints}/{sprint.totalStoryPoints}
                                     </Typography>
                                   </Box>
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
+                                  <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                       Overall Rate
                                     </Typography>
-                                    <Typography variant="h6" color="success.main">
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'success.main', lineHeight: 1.2 }}>
                                       {sprint.overallCompletionRate.toFixed(1)}%
                                     </Typography>
                                   </Box>
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
+                                  <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                       Planned Rate
                                     </Typography>
-                                    <Typography variant="h6" color="info.main">
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'info.main', lineHeight: 1.2 }}>
                                       {sprint.initialWorkCompletionRate.toFixed(1)}%
                                     </Typography>
                                   </Box>
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
+                                  <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                       Issues Done
                                     </Typography>
-                                    <Typography variant="h6">
-                                      {sprint.completedIssues} / {sprint.totalIssues}
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.2 }}>
+                                      {sprint.completedIssues}/{sprint.totalIssues}
                                     </Typography>
                                   </Box>
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
+                                  <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                       Scope Creep
                                     </Typography>
-                                    <Typography variant="h6" color={sprint.storyPointsAddedDuringSprint > 0 ? 'warning.main' : 'success.main'}>
-                                      {sprint.storyPointsAddedDuringSprint} SP
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: sprint.storyPointsAddedDuringSprint > 0 ? 'warning.main' : 'success.main', lineHeight: 1.2 }}>
+                                      {sprint.storyPointsAddedDuringSprint}SP
                                     </Typography>
                                   </Box>
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                      Issues Added
+                                  <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                      Added
                                     </Typography>
-                                    <Typography variant="h6" color={sprint.issuesAddedDuringSprint > 0 ? 'warning.main' : 'success.main'}>
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: sprint.issuesAddedDuringSprint > 0 ? 'warning.main' : 'success.main', lineHeight: 1.2 }}>
                                       {sprint.issuesAddedDuringSprint}
                                     </Typography>
                                   </Box>
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
+                                  <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                       Punted
                                     </Typography>
-                                    <Typography variant="h6" color={sprint.puntedIssues > 0 ? 'error.main' : 'success.main'}>
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: sprint.puntedIssues > 0 ? 'error.main' : 'success.main', lineHeight: 1.2 }}>
                                       {sprint.puntedIssues}
                                     </Typography>
                                   </Box>
-                                  <Box>
-                                    <Typography variant="body2" color="text.secondary">
+                                  <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                       Incomplete
                                     </Typography>
-                                    <Typography variant="h6" color={sprint.incompleteIssues > 0 ? 'error.main' : 'success.main'}>
+                                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: sprint.incompleteIssues > 0 ? 'error.main' : 'success.main', lineHeight: 1.2 }}>
                                       {sprint.incompleteIssues}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                
+                                {/* Dev Days Input Section */}
+                                <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid #e0e0e0' }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', minWidth: '70px' }}>
+                                      Dev Days:
+                                    </Typography>
+                                    <TextField
+                                      type="number"
+                                      size="small"
+                                      value={sprint.devDaysAvailable || ''}
+                                      onChange={(e) => handleDevDaysChange(sprint.sprintId, parseFloat(e.target.value) || 0)}
+                                      placeholder="0"
+                                      inputProps={{ 
+                                        min: 0, 
+                                        step: 0.5,
+                                        style: { textAlign: 'center', padding: '4px 8px' }
+                                      }}
+                                      sx={{ 
+                                        width: '80px',
+                                        '& .MuiOutlinedInput-root': {
+                                          height: '28px',
+                                          fontSize: '0.8rem'
+                                        }
+                                      }}
+                                    />
+                                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                      days
                                     </Typography>
                                   </Box>
                                 </Box>
