@@ -127,8 +127,19 @@ function TicketList({ title, tickets, icon, color, emptyMessage, showStoryPoints
           {showStoryPoints && totalStoryPoints > 0 && (
             <Chip 
               label={`${totalStoryPoints} SP`} 
-              size="small" 
-              sx={{ backgroundColor: color + '20', color: color }}
+              size="medium" 
+              sx={{ 
+                backgroundColor: color + '30', 
+                color: color,
+                fontWeight: 'bold',
+                fontSize: '0.875rem',
+                height: '32px',
+                '& .MuiChip-label': {
+                  px: 2,
+                  fontSize: '0.875rem',
+                  fontWeight: 'bold'
+                }
+              }}
             />
           )}
         </Box>
@@ -161,9 +172,20 @@ function TicketList({ title, tickets, icon, color, emptyMessage, showStoryPoints
                           {showStoryPoints && storyPoints > 0 && (
                             <Chip 
                               label={`${storyPoints} SP`} 
-                              size="small" 
-                              variant="outlined"
-                              sx={{ fontSize: '0.7rem', height: '20px' }}
+                              size="medium" 
+                              sx={{ 
+                                fontSize: '0.875rem', 
+                                height: '28px',
+                                backgroundColor: '#1976d2',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                minWidth: '55px',
+                                '& .MuiChip-label': {
+                                  px: 1.5,
+                                  fontSize: '0.875rem',
+                                  fontWeight: 'bold'
+                                }
+                              }}
                             />
                           )}
                           {ticket.priorityName && (
