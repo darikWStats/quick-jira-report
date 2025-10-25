@@ -7,8 +7,6 @@ import {
   Typography,
   TextField,
   Button,
-  Checkbox,
-  FormControlLabel,
   Box,
   CircularProgress,
   MenuItem,
@@ -37,6 +35,8 @@ import { FormValidator, FormData as FormDataType } from '../utils/validation';
 import { ApiService, AuthData, Project, Board, Sprint, AppConfig } from '../services/api';
 import { theme } from '../theme/theme';
 import { ProjectBoardSelection } from './ProjectBoardSelection';
+import { LoginForm } from './LoginForm';
+import { ConfigurationStatus } from './ConfigurationStatus';
 
 // Material-UI Icons
 import LoginIcon from '@mui/icons-material/Login';
@@ -464,67 +464,7 @@ export function JiraReportApp() {
           )}
 
           {/* Configuration Status Display */}
-          {appConfig && (
-            <Paper elevation={1} sx={{ padding: '1rem', marginBottom: '2rem', bgcolor: 'grey.50' }}>
-              <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1, fontSize: '1rem' }}>
-                🔧 Environment Configuration
-              </Typography>
-              <Box sx={{ display: 'grid', gap: 1, fontSize: '0.875rem' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Status:
-                  </Typography>
-                  <Chip 
-                    label={appConfig.configurationStatus.fullyConfigured ? 'Fully Configured' : 'Partial Configuration'}
-                    color={appConfig.configurationStatus.fullyConfigured ? 'success' : 'warning'}
-                    size="small"
-                  />
-                </Box>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      JIRA_HOST:
-                    </Typography>
-                    <Chip 
-                      label={appConfig.hasJiraHost ? '✓ Set' : '✗ Missing'}
-                      color={appConfig.hasJiraHost ? 'success' : 'error'}
-                      size="small"
-                      sx={{ fontSize: '0.7rem', height: '20px' }}
-                    />
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      JIRA_EMAIL:
-                    </Typography>
-                    <Chip 
-                      label={appConfig.hasJiraEmail ? '✓ Set' : '✗ Missing'}
-                      color={appConfig.hasJiraEmail ? 'success' : 'error'}
-                      size="small"
-                      sx={{ fontSize: '0.7rem', height: '20px' }}
-                    />
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      JIRA_TOKEN:
-                    </Typography>
-                    <Chip 
-                      label={appConfig.hasJiraToken ? '✓ Set' : '✗ Missing'}
-                      color={appConfig.hasJiraToken ? 'success' : 'error'}
-                      size="small"
-                      sx={{ fontSize: '0.7rem', height: '20px' }}
-                    />
-                  </Box>
-                </Box>
-                {!appConfig.configurationStatus.fullyConfigured && (
-                  <Alert severity="info" sx={{ mt: 1, py: 0.5 }}>
-                    <Typography variant="caption">
-                      Server environment variables can be set to pre-populate login fields. Missing: {appConfig.configurationStatus.missingCredentials.join(', ')}
-                    </Typography>
-                  </Alert>
-                )}
-              </Box>
-            </Paper>
-          )}
+          <ConfigurationStatus appConfig={appConfig} />
 
           {loadingConfig && (
             <Paper elevation={1} sx={{ padding: '2rem', textAlign: 'center', bgcolor: 'grey.50', mb: 2 }}>
@@ -538,145 +478,14 @@ export function JiraReportApp() {
           )}
           
           {!isLoggedIn ? (
-            <Paper elevation={3} sx={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-              <Typography variant="h5" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <LoginIcon color="primary" />
-                Login to Jira
-              </Typography>
-              
-              <TextField
-                label="Jira Host"
-                placeholder={appConfig?.hasJiraHost ? "Host provided by backend" : "https://yourcompany.atlassian.net"}
-                value={formData.jiraHost}
-                onChange={handleInputChange('jiraHost')}
-                type="url"
-                fullWidth
-                margin="normal"
-                helperText={
-                  appConfig?.hasJiraHost ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
-                      <CheckCircleIcon sx={{ fontSize: '1rem' }} />
-                      Host automatically provided by backend environment
-                    </Box>
-                  ) : (
-                    "Your Jira instance URL"
-                  )
-                }
-                InputProps={{
-                  ...(appConfig?.hasJiraHost && {
-                    startAdornment: (
-                      <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-                        <Chip 
-                          label="Backend" 
-                          color="success" 
-                          size="small" 
-                          sx={{ fontSize: '0.7rem', height: '20px' }}
-                        />
-                      </Box>
-                    ),
-                  })
-                }}
-              />
-              
-              <TextField
-                label="Email"
-                placeholder={appConfig?.hasJiraEmail ? "Email provided by backend" : "Enter your email"}
-                value={formData.email}
-                onChange={handleInputChange('email')}
-                type="email"
-                fullWidth
-                margin="normal"
-                helperText={
-                  appConfig?.hasJiraEmail ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
-                      <CheckCircleIcon sx={{ fontSize: '1rem' }} />
-                      Email automatically provided by backend environment
-                    </Box>
-                  ) : (
-                    "Your Jira account email"
-                  )
-                }
-                InputProps={{
-                  ...(appConfig?.hasJiraEmail && {
-                    startAdornment: (
-                      <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-                        <Chip 
-                          label="Backend" 
-                          color="success" 
-                          size="small" 
-                          sx={{ fontSize: '0.7rem', height: '20px' }}
-                        />
-                      </Box>
-                    ),
-                  })
-                }}
-              />
-              
-              <TextField
-                label="Jira Token"
-                placeholder={appConfig?.hasJiraToken ? "Token provided by backend" : "Enter your Jira token"}
-                value={formData.jiraToken}
-                onChange={handleInputChange('jiraToken')}
-                type="password"
-                fullWidth
-                margin="normal"
-                disabled={appConfig?.hasJiraToken}
-                helperText={
-                  appConfig?.hasJiraToken ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
-                      <CheckCircleIcon sx={{ fontSize: '1rem' }} />
-                      Token automatically provided by backend environment
-                    </Box>
-                  ) : (
-                    "Your API token from Jira settings"
-                  )
-                }
-                InputProps={{
-                  ...(appConfig?.hasJiraToken && {
-                    startAdornment: (
-                      <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-                        <Chip 
-                          label="Backend" 
-                          color="success" 
-                          size="small" 
-                          sx={{ fontSize: '0.7rem', height: '20px' }}
-                        />
-                      </Box>
-                    ),
-                  })
-                }}
-              />
-              
-              {appConfig?.configurationStatus.fullyConfigured && (
-                <Alert severity="success" sx={{ mt: 2, mb: 2 }}>
-                  <Typography variant="body2">
-                    🎉 All credentials are provided by backend environment! You can connect directly.
-                  </Typography>
-                </Alert>
-              )}
-
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={formData.rememberMe}
-                    onChange={handleInputChange('rememberMe')}
-                  />
-                }
-                label="Remember me"
-                sx={{ mt: 2, mb: 2 }}
-              />
-              
-              <Button
-                variant="contained"
-                onClick={handleLogin}
-                disabled={loadingLogin || !canLogin()}
-                startIcon={loadingLogin ? <CircularProgress size={20} /> : <LoginIcon />}
-                fullWidth
-                size="large"
-              >
-                {loadingLogin ? 'Connecting...' : 'Connect to Jira'}
-              </Button>
-            </Paper>
+            <LoginForm
+              formData={formData}
+              appConfig={appConfig}
+              loadingLogin={loadingLogin}
+              onInputChange={handleInputChange}
+              onLogin={handleLogin}
+              canLogin={canLogin}
+            />
           ) : (
             <Paper elevation={3} sx={{ padding: '2rem' }}>
               {/* Logout Button */}
