@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -10,17 +10,36 @@ import {
   Card,
   CardContent,
   IconButton,
-  Tooltip
+  Tooltip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  Badge,
+  Link
 } from '@mui/material';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import AddIcon from '@mui/icons-material/Add';
 import { Sprint } from '../services/api';
 import { FormData as FormDataType } from '../utils/validation';
 
 // Sprint Report Display interfaces
 interface SprintReportIssue {
   key: string;
+  summary?: string;
+  typeName?: string;
+  statusName?: string;
+  assigneeName?: string;
+  priorityName?: string;
   currentEstimateStatistic?: {
     statFieldValue?: {
       value: number;
@@ -65,6 +84,149 @@ interface SprintReportDisplayProps {
   onSprintChange: (event: any, newValue: Sprint | null) => void;
   onGenerateReport: () => void;
   canGenerateReport: () => boolean;
+}
+
+// Ticket List Component
+interface TicketListProps {
+  title: string;
+  tickets: SprintReportIssue[];
+  icon: React.ReactNode;
+  color: string;
+  emptyMessage: string;
+  showStoryPoints?: boolean;
+}
+
+function TicketList({ title, tickets, icon, color, emptyMessage, showStoryPoints = true }: TicketListProps) {
+  const totalStoryPoints = showStoryPoints ? tickets.reduce((sum, ticket) => {
+    const storyPoints = ticket.currentEstimateStatistic?.statFieldValue?.value || 
+                       ticket.estimateStatistic?.statFieldValue?.value || 0;
+    return sum + storyPoints;
+  }, 0) : 0;
+
+  return (
+    <Accordion defaultExpanded>
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+          {icon}
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            {title}
+          </Typography>
+          <Badge 
+            badgeContent={tickets.length} 
+            color="primary" 
+            sx={{ 
+              '& .MuiBadge-badge': { 
+                backgroundColor: color,
+                color: 'white'
+              }
+            }}
+          >
+            <Box sx={{ mr: 2 }} />
+          </Badge>
+          {showStoryPoints && totalStoryPoints > 0 && (
+            <Chip 
+              label={`${totalStoryPoints} SP`} 
+              size="small" 
+              sx={{ backgroundColor: color + '20', color: color }}
+            />
+          )}
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails>
+        {tickets.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+            {emptyMessage}
+          </Typography>
+        ) : (
+          <List dense>
+            {tickets.map((ticket, index) => {
+              const storyPoints = showStoryPoints ? 
+                (ticket.currentEstimateStatistic?.statFieldValue?.value || 
+                 ticket.estimateStatistic?.statFieldValue?.value || 0) : 0;
+              
+              return (
+                <React.Fragment key={ticket.key}>
+                  <ListItem sx={{ px: 0 }}>
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                          <Link 
+                            href={`#`} 
+                            sx={{ fontWeight: 'medium', textDecoration: 'none' }}
+                            color="primary"
+                          >
+                            {ticket.key}
+                          </Link>
+                          {showStoryPoints && storyPoints > 0 && (
+                            <Chip 
+                              label={`${storyPoints} SP`} 
+                              size="small" 
+                              variant="outlined"
+                              sx={{ fontSize: '0.7rem', height: '20px' }}
+                            />
+                          )}
+                          {ticket.priorityName && (
+                            <Chip 
+                              label={ticket.priorityName} 
+                              size="small" 
+                              color={
+                                ticket.priorityName.toLowerCase().includes('high') ? 'error' :
+                                ticket.priorityName.toLowerCase().includes('medium') ? 'warning' :
+                                'default'
+                              }
+                              sx={{ fontSize: '0.7rem', height: '20px' }}
+                            />
+                          )}
+                          {ticket.typeName && (
+                            <Chip 
+                              label={ticket.typeName} 
+                              size="small" 
+                              variant="outlined"
+                              sx={{ fontSize: '0.7rem', height: '20px' }}
+                            />
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <Box sx={{ mt: 0.5 }}>
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            {ticket.summary || 'No summary available'}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                            {ticket.statusName && (
+                              <Chip 
+                                label={ticket.statusName} 
+                                size="small" 
+                                color={
+                                  ticket.statusName.toLowerCase().includes('done') ? 'success' :
+                                  ticket.statusName.toLowerCase().includes('progress') ? 'info' :
+                                  'default'
+                                }
+                                sx={{ fontSize: '0.65rem', height: '18px' }}
+                              />
+                            )}
+                            {ticket.assigneeName && (
+                              <Chip 
+                                label={`👤 ${ticket.assigneeName}`} 
+                                size="small" 
+                                variant="outlined"
+                                sx={{ fontSize: '0.65rem', height: '18px' }}
+                              />
+                            )}
+                          </Box>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  {index < tickets.length - 1 && <Divider />}
+                </React.Fragment>
+              );
+            })}
+          </List>
+        )}
+      </AccordionDetails>
+    </Accordion>
+  );
 }
 
 export function SprintReportDisplay({
@@ -372,6 +534,49 @@ export function SprintReportDisplay({
                       </Box>
                     </CardContent>
                   </Card>
+                </Box>
+
+                {/* Detailed Ticket Information */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                    🎫 Ticket Details
+                  </Typography>
+                  
+                  {/* Completed Tickets */}
+                  <Box sx={{ mb: 2 }}>
+                    <TicketList
+                      title="Completed Tickets"
+                      tickets={completedIssues}
+                      icon={<CheckCircleIcon sx={{ color: '#2e7d32' }} />}
+                      color="#2e7d32"
+                      emptyMessage="No tickets were completed in this sprint."
+                      showStoryPoints={true}
+                    />
+                  </Box>
+
+                  {/* Unfinished Tickets */}
+                  <Box sx={{ mb: 2 }}>
+                    <TicketList
+                      title="Unfinished Tickets"
+                      tickets={[...incompleteIssues, ...puntedIssues]}
+                      icon={<CancelIcon sx={{ color: '#d32f2f' }} />}
+                      color="#d32f2f"
+                      emptyMessage="All tickets were completed - excellent work!"
+                      showStoryPoints={true}
+                    />
+                  </Box>
+
+                  {/* Tickets Added During Sprint */}
+                  <Box sx={{ mb: 2 }}>
+                    <TicketList
+                      title="Tickets Added During Sprint"
+                      tickets={completedIssues.filter(issue => issueKeysAddedDuringSprint[issue.key])}
+                      icon={<AddIcon sx={{ color: '#f57c00' }} />}
+                      color="#f57c00"
+                      emptyMessage="No tickets were added during the sprint - great planning discipline!"
+                      showStoryPoints={true}
+                    />
+                  </Box>
                 </Box>
               </>
             );
