@@ -390,12 +390,17 @@ export function SprintReportDisplay({
 
             return (
               <>
-                {/* Story Points Overview */}
+                {/* Sprint Metrics Overview */}
                 <Box sx={{ mb: 4 }}>
                   <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
-                    📊 Story Points Overview
+                    📊 Sprint Metrics Overview
                   </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 2 }}>
+                  
+                  {/* Story Points Section */}
+                  <Typography variant="body1" sx={{ mb: 1, fontWeight: 'medium', color: '#666' }}>
+                    Story Points
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 2, mb: 3 }}>
                     <Card>
                       <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
                         <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
@@ -426,15 +431,6 @@ export function SprintReportDisplay({
                         </Typography>
                       </CardContent>
                     </Card>
-                  </Box>
-                </Box>
-
-                {/* Sprint Scope Analysis */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
-                    🎯 Sprint Scope Analysis
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 2 }}>
                     <Card>
                       <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
                         <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
@@ -476,12 +472,10 @@ export function SprintReportDisplay({
                       </CardContent>
                     </Card>
                   </Box>
-                </Box>
 
-                {/* Issue Tracking */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
-                    📋 Issue Tracking
+                  {/* Issues Section */}
+                  <Typography variant="body1" sx={{ mb: 1, fontWeight: 'medium', color: '#666' }}>
+                    Issues & Tickets
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 2 }}>
                     <Card>
