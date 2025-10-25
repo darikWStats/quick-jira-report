@@ -215,7 +215,7 @@ export class ApiService {
       if (authData.email) payload.email = authData.email;
       if (authData.jiraToken) payload.jiraToken = authData.jiraToken;
 
-      const response = await fetch('/api/velocity-report', {
+      const response = await fetch('/api/velocity-report-detailed', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -231,6 +231,38 @@ export class ApiService {
       return await response.json();
     } catch (error) {
       console.error('API Error calculating velocity:', error);
+      throw error;
+    }
+  }
+
+  // New method for individual sprint reports
+  static async getSprintReport(authData: Partial<AuthData>, boardId: string, sprintId: string): Promise<any> {
+    try {
+      const payload: any = {
+        boardId,
+        sprintId
+      };
+
+      if (authData.jiraHost) payload.jiraHost = authData.jiraHost;
+      if (authData.email) payload.email = authData.email;
+      if (authData.jiraToken) payload.jiraToken = authData.jiraToken;
+
+      const response = await fetch('/api/sprint-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API Error fetching sprint report:', error);
       throw error;
     }
   }

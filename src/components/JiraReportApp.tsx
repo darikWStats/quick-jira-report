@@ -318,9 +318,106 @@ export function JiraReportApp() {
         jiraToken: formData.jiraToken
       };
 
-      const velocityData = await ApiService.calculateVelocity(authData, formData.boardId, selectedSprintIds);
+      // Fetch individual sprint reports for detailed analysis
+      console.log('🔄 Fetching detailed sprint reports for velocity calculation...');
+      const sprintReports = await Promise.all(
+        selectedSprintIds.map(async (sprintId) => {
+          console.log(`📊 Fetching sprint report for sprint ${sprintId}...`);
+          const sprintReport = await ApiService.getSprintReport(authData, formData.boardId, sprintId);
+          
+          // Calculate enhanced metrics for each sprint (similar to postman script)
+          const completedIssues = sprintReport.contents?.completedIssues || [];
+          const issueKeysAddedDuringSprint = sprintReport.contents?.issueKeysAddedDuringSprint || {};
+          const puntedIssues = sprintReport.contents?.puntedIssues || [];
+          const incompleteIssues = sprintReport.contents?.issuesNotCompletedInCurrentSprint || [];
+          
+          const completedStoryPoints = sprintReport.contents?.completedIssuesEstimateSum?.value || 0;
+          const totalStoryPoints = sprintReport.contents?.allIssuesEstimateSum?.value || 0;
+          const issuesAddedCount = Object.keys(issueKeysAddedDuringSprint).length;
+          
+          // Calculate story points added during sprint
+          let storyPointsAddedDuringSprint = 0;
+          completedIssues.forEach((issue: any) => {
+            if (issueKeysAddedDuringSprint[issue.key]) {
+              const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
+                                 issue.estimateStatistic?.statFieldValue?.value || 0;
+              storyPointsAddedDuringSprint += storyPoints;
+            }
+          });
+          
+          // Calculate completed story points from initial issues
+          let completedStoryPointsFromInitialIssues = 0;
+          completedIssues.forEach((issue: any) => {
+            if (!issueKeysAddedDuringSprint[issue.key]) {
+              const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
+                                 issue.estimateStatistic?.statFieldValue?.value || 0;
+              completedStoryPointsFromInitialIssues += storyPoints;
+            }
+          });
+          
+          const initialSprintStoryPoints = totalStoryPoints - storyPointsAddedDuringSprint;
+          const overallCompletionRate = totalStoryPoints > 0 ? (completedStoryPoints / totalStoryPoints) * 100 : 0;
+          const initialWorkCompletionRate = initialSprintStoryPoints > 0 ? 
+            (completedStoryPointsFromInitialIssues / initialSprintStoryPoints) * 100 : 0;
+
+          console.log(`✅ Sprint ${sprintId} analysis complete:`, {
+            completedStoryPoints,
+            totalStoryPoints,
+            overallCompletionRate: overallCompletionRate.toFixed(1) + '%'
+          });
+
+          return {
+            sprintId,
+            sprint: sprintReport.sprint,
+            completedStoryPoints,
+            totalStoryPoints,
+            completedIssues: completedIssues.length,
+            totalIssues: completedIssues.length + incompleteIssues.length + puntedIssues.length,
+            issuesAddedDuringSprint: issuesAddedCount,
+            puntedIssues: puntedIssues.length,
+            incompleteIssues: incompleteIssues.length,
+            storyPointsAddedDuringSprint,
+            completedStoryPointsFromInitialIssues,
+            initialSprintStoryPoints,
+            overallCompletionRate,
+            initialWorkCompletionRate,
+            // Store raw data for detailed analysis
+            rawSprintReport: sprintReport
+          };
+        })
+      );
+
+      // Calculate aggregate metrics
+      const totalStoryPoints = sprintReports.reduce((sum, sprint) => sum + sprint.completedStoryPoints, 0);
+      const totalSprints = sprintReports.length;
+      const averageVelocity = totalSprints > 0 ? totalStoryPoints / totalSprints : 0;
+      const averageCompletionRate = sprintReports.reduce((sum, sprint) => sum + sprint.overallCompletionRate, 0) / totalSprints;
+
+      const velocityData = {
+        totalSprints,
+        totalStoryPoints,
+        averageVelocity,
+        averageCompletionRate,
+        sprints: sprintReports,
+        // Additional insights
+        insights: {
+          scopeCreepTotal: sprintReports.reduce((sum, sprint) => sum + sprint.storyPointsAddedDuringSprint, 0),
+          averageScopeCreep: sprintReports.reduce((sum, sprint) => sum + sprint.storyPointsAddedDuringSprint, 0) / totalSprints,
+          averageInitialWorkCompletion: sprintReports.reduce((sum, sprint) => sum + sprint.initialWorkCompletionRate, 0) / totalSprints,
+          totalPuntedIssues: sprintReports.reduce((sum, sprint) => sum + sprint.puntedIssues, 0),
+          totalIncompleteIssues: sprintReports.reduce((sum, sprint) => sum + sprint.incompleteIssues, 0)
+        }
+      };
+
+      console.log('🎯 Velocity calculation complete:', {
+        sprints: totalSprints,
+        averageVelocity: averageVelocity.toFixed(1),
+        averageCompletionRate: averageCompletionRate.toFixed(1) + '%'
+      });
+
       setVelocityData(velocityData);
     } catch (error) {
+      console.error('❌ Velocity calculation failed:', error);
       showError(`Error calculating velocity: ${(error as Error).message}`);
     } finally {
       setLoadingVelocity(false);
@@ -1020,11 +1117,11 @@ export function JiraReportApp() {
                       {/* Velocity Metrics */}
                       <Box sx={{ mb: 4 }}>
                         <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
-                          📈 Velocity Metrics
+                          📈 Core Velocity Metrics
                         </Typography>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 2 }}>
                           <Card>
-                            <CardContent sx={{ textAlign: 'center' }}>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
                               <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
                                 {velocityData.averageVelocity.toFixed(1)}
                               </Typography>
@@ -1034,7 +1131,7 @@ export function JiraReportApp() {
                             </CardContent>
                           </Card>
                           <Card>
-                            <CardContent sx={{ textAlign: 'center' }}>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
                               <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
                                 {velocityData.averageCompletionRate.toFixed(1)}%
                               </Typography>
@@ -1044,12 +1141,71 @@ export function JiraReportApp() {
                             </CardContent>
                           </Card>
                           <Card>
-                            <CardContent sx={{ textAlign: 'center' }}>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
+                                {velocityData.insights?.averageInitialWorkCompletion?.toFixed(1) || 0}%
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#80868b' }}>
+                                Planned Work Completion
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
                               <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#ed6c02' }}>
                                 {velocityData.totalSprints}
                               </Typography>
                               <Typography variant="body2" sx={{ color: '#80868b' }}>
                                 Sprints Analyzed
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Box>
+                      </Box>
+
+                      {/* Team Health Metrics */}
+                      <Box sx={{ mb: 4 }}>
+                        <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
+                          🎯 Team Health & Discipline
+                        </Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 2 }}>
+                          <Card>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
+                                {velocityData.insights?.averageScopeCreep?.toFixed(1) || 0}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#80868b' }}>
+                                Avg Scope Creep (SP)
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#7b1fa2' }}>
+                                {velocityData.insights?.totalPuntedIssues || 0}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#80868b' }}>
+                                Total Punted Issues
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>
+                                {velocityData.insights?.totalIncompleteIssues || 0}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#80868b' }}>
+                                Total Incomplete Issues
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                              <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                                {velocityData.insights?.scopeCreepTotal || 0}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: '#80868b' }}>
+                                Total Scope Creep (SP)
                               </Typography>
                             </CardContent>
                           </Card>
@@ -1075,7 +1231,7 @@ export function JiraReportApp() {
                                     size="small"
                                   />
                                 </Box>
-                                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 2, mt: 2 }}>
+                                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 2, mt: 2 }}>
                                   <Box>
                                     <Typography variant="body2" color="text.secondary">
                                       Story Points
@@ -1086,19 +1242,58 @@ export function JiraReportApp() {
                                   </Box>
                                   <Box>
                                     <Typography variant="body2" color="text.secondary">
-                                      Completion Rate
+                                      Overall Rate
                                     </Typography>
                                     <Typography variant="h6" color="success.main">
-                                      {sprint.totalStoryPoints > 0 ? 
-                                        ((sprint.completedStoryPoints / sprint.totalStoryPoints) * 100).toFixed(1) : 0}%
+                                      {sprint.overallCompletionRate.toFixed(1)}%
                                     </Typography>
                                   </Box>
                                   <Box>
                                     <Typography variant="body2" color="text.secondary">
-                                      Issues Completed
+                                      Planned Rate
+                                    </Typography>
+                                    <Typography variant="h6" color="info.main">
+                                      {sprint.initialWorkCompletionRate.toFixed(1)}%
+                                    </Typography>
+                                  </Box>
+                                  <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Issues Done
                                     </Typography>
                                     <Typography variant="h6">
                                       {sprint.completedIssues} / {sprint.totalIssues}
+                                    </Typography>
+                                  </Box>
+                                  <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Scope Creep
+                                    </Typography>
+                                    <Typography variant="h6" color={sprint.storyPointsAddedDuringSprint > 0 ? 'warning.main' : 'success.main'}>
+                                      {sprint.storyPointsAddedDuringSprint} SP
+                                    </Typography>
+                                  </Box>
+                                  <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Issues Added
+                                    </Typography>
+                                    <Typography variant="h6" color={sprint.issuesAddedDuringSprint > 0 ? 'warning.main' : 'success.main'}>
+                                      {sprint.issuesAddedDuringSprint}
+                                    </Typography>
+                                  </Box>
+                                  <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Punted
+                                    </Typography>
+                                    <Typography variant="h6" color={sprint.puntedIssues > 0 ? 'error.main' : 'success.main'}>
+                                      {sprint.puntedIssues}
+                                    </Typography>
+                                  </Box>
+                                  <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Incomplete
+                                    </Typography>
+                                    <Typography variant="h6" color={sprint.incompleteIssues > 0 ? 'error.main' : 'success.main'}>
+                                      {sprint.incompleteIssues}
                                     </Typography>
                                   </Box>
                                 </Box>
