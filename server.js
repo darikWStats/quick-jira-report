@@ -8,6 +8,8 @@ const compression = require('compression');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+console.log('🚀 Starting production server...');
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -27,32 +29,34 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(cors());
-
-// Serve modern build from dist directory
-console.log('� Serving modern build from dist/ directory');
-app.use(express.static(path.join(__dirname, 'dist')));
-
 app.use(express.json());
 
-// API Routes
-app.use('/api', require('./routes/api'));
+console.log('🔧 Middleware configured');
 
-// Serve the main application
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+// API Routes (MUST come before static files)
+app.use('/api', require('./routes/api'));
+console.log('🛠 API routes registered at /api');
+
+// Serve modern build from dist directory
+const distPath = path.join(__dirname, 'dist');
+console.log('📦 Serving static files from:', distPath);
+app.use(express.static(distPath));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  console.log('🌐 Serving SPA fallback for:', req.path);
+  res.sendFile(indexPath);
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('❌ Server error:', err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log('🌐 Frontend available at http://localhost:3000');
+  console.log('🔌 API endpoints available at http://localhost:3000/api');
 });
