@@ -174,16 +174,16 @@ npm start
 
 The application features a modular component system with clear separation of concerns:
 
-| Component | Purpose | Lines | Key Features |
-|-----------|---------|--------|--------------|
-| `JiraReportApp.tsx` | Main orchestrator | 606 | State management, API integration |
-| `VelocityAnalysisDisplay.tsx` | Velocity analysis | 249 | Historical trends, team metrics |
-| `ProductivityAnalysis.tsx` | Productivity metrics | 312 | Dev days, capacity planning |
-| `SprintReportDisplay.tsx` | Detailed reports | 767 | Ticket analysis, export features |
-| `SprintBreakdownCards.tsx` | Sprint cards | 159 | Individual sprint metrics |
-| `LoginForm.tsx` | Authentication | 67 | Secure credential management |
-| `ConfigurationStatus.tsx` | Environment status | 67 | Configuration validation |
-| `TabNavigation.tsx` | Navigation | 32 | Clean tab interface |
-| `ProjectBoardSelection.tsx` | Board selection | - | Project/board management |
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| `JiraReportApp.tsx` | Main orchestrator | State management, API integration |
+| `VelocityAnalysisDisplay.tsx` | Velocity analysis | Historical trends, team metrics |
+| `ProductivityAnalysis.tsx` | Productivity metrics | Dev days, capacity planning |
+| `SprintReportDisplay.tsx` | Detailed reports | Ticket analysis, export features |
+| `SprintBreakdownCards.tsx` | Sprint cards | Individual sprint metrics |
+| `LoginForm.tsx` | Authentication | Secure credential management |
+| `ConfigurationStatus.tsx` | Environment status | Configuration validation |
+| `TabNavigation.tsx` | Navigation | Clean tab interface |
+| `ProjectBoardSelection.tsx` | Board selection | Project/board management |
 
-**Total Architecture Transformation:** From 1,520-line monolith to 606-line orchestrator (60.1% reduction) with 9 focused, reusable components.
+**Architecture Transformation:** Evolved from monolithic structure to 9 focused, reusable components with clean separation of concerns.
