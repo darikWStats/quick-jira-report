@@ -17,7 +17,7 @@ A modern web application for generating comprehensive Jira sprint reports with a
 - Story points breakdown with visual indicators
 - Issue tracking with categorized ticket details
 
-### 💻 **Modern Technology Stack**
+### 💻 **Technology**
 - **Frontend:** React 19.2.0 + TypeScript
 - **UI Framework:** Material-UI (MUI) v7 with custom theming
 - **Build Tool:** Vite 5.4.21 with hot module reloading
@@ -30,45 +30,6 @@ A modern web application for generating comprehensive Jira sprint reports with a
 - Copy-paste ready sprint summaries for presentations
 - Excel/CSV export functionality
 - Local storage for user preferences (non-sensitive data)
-
-## Project Structure
-
-```
-quick-jira-report/
-├── server.js                     # Express server entry point
-├── package.json                  # Project dependencies and scripts
-├── vite.config.js               # Vite configuration
-├── routes/
-│   └── api.js                   # API routes
-├── services/
-│   └── jiraService.js           # Jira API integration service
-├── src/                         # Modern React + TypeScript source
-│   ├── main.tsx                 # React application entry point
-│   ├── index.html               # HTML template
-│   ├── components/              # Modular React components
-│   │   ├── JiraReportApp.tsx    # Main application orchestrator
-│   │   ├── LoginForm.tsx        # Authentication form
-│   │   ├── ConfigurationStatus.tsx # Environment configuration
-│   │   ├── TabNavigation.tsx    # Tab navigation interface
-│   │   ├── VelocityAnalysisDisplay.tsx # Velocity analysis system
-│   │   ├── ProductivityAnalysis.tsx # Productivity metrics & estimation
-│   │   ├── SprintBreakdownCards.tsx # Individual sprint cards
-│   │   ├── SprintReportDisplay.tsx # Detailed sprint reports
-│   │   └── ProjectBoardSelection.tsx # Board/project selection
-│   ├── services/
-│   │   └── api.ts              # API service with TypeScript interfaces
-│   ├── utils/
-│   │   ├── validation.ts       # Form validation utilities
-│   │   └── storage.ts          # localStorage utility
-│   └── theme/
-│       └── theme.ts            # Material-UI theme configuration
-├── docs/                        # API documentation
-│   └── jira-velocity-api-options.ts # JIRA API reference
-├── suggestions/                 # Enhancement suggestions
-├── dist/                       # Built application (generated)
-├── example_response.json       # Sample Jira API response
-└── postman-test-script.js     # Postman testing script
-```
 
 ## Installation
 
@@ -140,28 +101,6 @@ npm run dev:server       # http://localhost:3000
 - Sensitive data (API tokens) not stored locally
 - CSP headers configured
 
-## Architecture & Development
-
-### 🏗️ **Modern Architecture**
-- **Frontend:** React 19.2.0 + TypeScript with Vite build system
-- **Backend:** Express.js with modular route/service separation
-- **Component System:** 9 extracted, reusable TypeScript components
-- **State Management:** React hooks with TypeScript interfaces
-- **Styling:** Material-UI v7 with emotion-based custom theming
-
-### 🔧 **Development Features**
-- **Hot Module Reloading:** Instant updates during development
-- **TypeScript:** Full type safety across frontend and API interfaces  
-- **Modular Components:** Clean separation of concerns
-- **API Documentation:** Comprehensive JIRA API reference in `/docs`
-- **Security:** Helmet.js, CORS, CSP headers, input validation
-
-### 📈 **Analytics Capabilities**
-- **Velocity Tracking:** Historical sprint performance analysis
-- **Productivity Metrics:** Dev days tracking and capacity planning
-- **Scope Analysis:** Mid-sprint addition tracking and discipline metrics
-- **Team Health:** Completion quality and sprint management insights
-
 ## Scripts
 
 - `npm start` - Build and start production server
@@ -170,21 +109,3 @@ npm run dev:server       # http://localhost:3000
 - `npm run build` - Build React application for production
 - `npm run preview` - Preview production build locally
 - `npm run serve` - Build and serve production version
-
-## Component Architecture
-
-The application features a modular component system with clear separation of concerns:
-
-| Component | Purpose | Key Features |
-|-----------|---------|--------------|
-| `JiraReportApp.tsx` | Main orchestrator | State management, API integration |
-| `VelocityAnalysisDisplay.tsx` | Velocity analysis | Historical trends, team metrics |
-| `ProductivityAnalysis.tsx` | Productivity metrics | Dev days, capacity planning |
-| `SprintReportDisplay.tsx` | Detailed reports | Ticket analysis, export features |
-| `SprintBreakdownCards.tsx` | Sprint cards | Individual sprint metrics |
-| `LoginForm.tsx` | Authentication | Secure credential management |
-| `ConfigurationStatus.tsx` | Environment status | Configuration validation |
-| `TabNavigation.tsx` | Navigation | Clean tab interface |
-| `ProjectBoardSelection.tsx` | Board selection | Project/board management |
-
-**Architecture Transformation:** Evolved from monolithic structure to 9 focused, reusable components with clean separation of concerns.
