@@ -83,27 +83,28 @@ cp .env.example .env
 # Edit .env with your configuration if needed
 ```
 
-3. **Start development:**
-```bash
-# Frontend development server (Vite)
-npm run dev
+3. **Start the application:**
 
-# Backend development server (separate terminal)
-npm run dev:server
-```
-
-4. **Production build:**
+**Single Instance (Recommended):**
 ```bash
-# Build and serve production version
+# Build and serve complete application on one port
 npm start
+# Access at: http://localhost:3000
 ```
 
-**Development URLs:**
-- Frontend: `http://localhost:5173` (Vite dev server)
-- Backend API: `http://localhost:3000` (Express server)
+**Development Mode (Optional - for active development):**
+```bash
+# Terminal 1: Frontend development server (Vite)
+npm run dev              # http://localhost:5173
 
-**Production URL:**
-- Full application: `http://localhost:3000` (serves built frontend + API)
+# Terminal 2: Backend API server (Express)  
+npm run dev:server       # http://localhost:3000
+```
+
+**Application URLs:**
+- **Production/Single Instance**: `http://localhost:3000` (complete app)
+- **Development Frontend**: `http://localhost:5173` (Vite dev server)  
+- **Development Backend**: `http://localhost:3000` (Express API only)
 
 ## Usage
 
