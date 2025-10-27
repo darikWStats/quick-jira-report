@@ -169,14 +169,28 @@ router.post('/velocity-report', async (req, res) => {
       sprintIds.map(async (sprintId) => {
         try {
           const sprintReport = await jiraService.getSprintReport(credentials, boardId, sprintId);
+          
+          // Calculate actual sprint scope (only issues that were part of this sprint)
+          const completedIssues = sprintReport.contents?.completedIssues || [];
+          const incompleteIssues = sprintReport.contents?.issuesNotCompletedInCurrentSprint || [];
+          const puntedIssues = sprintReport.contents?.puntedIssues || [];
+          
+          let actualSprintTotalPoints = 0;
+          
+          // Count story points from all issues that were actually part of this sprint
+          [...completedIssues, ...incompleteIssues, ...puntedIssues].forEach(issue => {
+            const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
+                               issue.estimateStatistic?.statFieldValue?.value || 0;
+            actualSprintTotalPoints += storyPoints;
+          });
+          
           return {
             sprintId,
             sprint: sprintReport.sprint,
             completedStoryPoints: sprintReport.contents?.completedIssuesEstimateSum?.value || 0,
-            totalStoryPoints: sprintReport.contents?.allIssuesEstimateSum?.value || 0,
-            completedIssues: sprintReport.contents?.completedIssues?.length || 0,
-            totalIssues: (sprintReport.contents?.completedIssues?.length || 0) + 
-                        (sprintReport.contents?.issuesNotCompletedInCurrentSprint?.length || 0)
+            totalStoryPoints: actualSprintTotalPoints, // Use calculated actual sprint scope
+            completedIssues: completedIssues.length,
+            totalIssues: completedIssues.length + incompleteIssues.length + puntedIssues.length
           };
         } catch (error) {
           console.error(`Error fetching sprint ${sprintId}:`, error);

@@ -356,31 +356,45 @@ export function SprintReportDisplay({
             const incompleteIssues = reportData.contents?.issuesNotCompletedInCurrentSprint || [];
             
             const completedEstimateSum = reportData.contents?.completedIssuesEstimateSum?.value || 0;
-            const allIssuesEstimateSum = reportData.contents?.allIssuesEstimateSum?.value || 0;
             const issuesAddedCount = Object.keys(issueKeysAddedDuringSprint).length;
             
-            // Calculate story points added during sprint
+            // Calculate story points for issues that were actually part of this sprint
+            let actualSprintTotalPoints = 0;
             let storyPointsAddedDuringSprint = 0;
-            completedIssues.forEach(issue => {
-              if (issueKeysAddedDuringSprint[issue.key]) {
-                const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
-                                   issue.estimateStatistic?.statFieldValue?.value || 0;
-                storyPointsAddedDuringSprint += storyPoints;
-              }
-            });
-            
-            // Calculate completed story points from initial issues
             let completedStoryPointsFromInitialIssues = 0;
+            
+            // Count completed issues that were part of this sprint
             completedIssues.forEach(issue => {
-              if (!issueKeysAddedDuringSprint[issue.key]) {
-                const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
-                                   issue.estimateStatistic?.statFieldValue?.value || 0;
+              const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
+                                 issue.estimateStatistic?.statFieldValue?.value || 0;
+              actualSprintTotalPoints += storyPoints;
+              
+              if (issueKeysAddedDuringSprint[issue.key]) {
+                storyPointsAddedDuringSprint += storyPoints;
+              } else {
                 completedStoryPointsFromInitialIssues += storyPoints;
               }
             });
             
-            // Calculate initial sprint story points
-            const initialSprintStoryPoints = allIssuesEstimateSum - storyPointsAddedDuringSprint;
+            // Count incomplete issues that were part of this sprint
+            incompleteIssues.forEach(issue => {
+              const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
+                                 issue.estimateStatistic?.statFieldValue?.value || 0;
+              actualSprintTotalPoints += storyPoints;
+            });
+            
+            // Count punted issues that were part of this sprint
+            puntedIssues.forEach(issue => {
+              const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
+                                 issue.estimateStatistic?.statFieldValue?.value || 0;
+              actualSprintTotalPoints += storyPoints;
+            });
+            
+            // Use actual sprint scope instead of Jira's allIssuesEstimateSum
+            const allIssuesEstimateSum = actualSprintTotalPoints;
+            
+            // Calculate initial sprint story points (excluding mid-sprint additions)
+            const initialSprintStoryPoints = actualSprintTotalPoints - storyPointsAddedDuringSprint;
             
             // Calculate completion percentages
             const overallCompletionPercentage = allIssuesEstimateSum > 0 ? 
