@@ -218,44 +218,48 @@ export function VelocityAnalysisDisplay({
             </Typography>
             
             {/* Overall Productivity Metrics */}
-            <Card sx={{ mb: 2 }}>
-              <CardContent>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 2 }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                      {metrics.averageStoryPointsPerDevDay.toFixed(1)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Avg SP per Dev Day
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                      {metrics.sprintsWithDevDays.length}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Sprints Analyzed
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
-                      {metrics.totalStoryPoints}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Story Points
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
-                      {metrics.totalDevDays.toFixed(1)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Dev Days
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 2, mb: 2 }}>
+              <Card>
+                <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    {metrics.averageStoryPointsPerDevDay.toFixed(1)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#80868b' }}>
+                    Avg SP per Dev Day
+                  </Typography>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                    {metrics.sprintsWithDevDays.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#80868b' }}>
+                    Sprints Analyzed
+                  </Typography>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#388e3c' }}>
+                    {metrics.totalStoryPoints}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#80868b' }}>
+                    Total Story Points
+                  </Typography>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#f57c00' }}>
+                    {metrics.totalDevDays.toFixed(1)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#80868b' }}>
+                    Total Dev Days
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
 
             {/* Individual Sprint Productivity */}
             <Card sx={{ mb: 2 }}>
