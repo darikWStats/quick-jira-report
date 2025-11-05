@@ -198,18 +198,46 @@ router.post('/velocity-report', async (req, res) => {
           const sprintReport = await jiraService.getSprintReport(credentials, boardId, sprintId);
           
           // Calculate actual sprint scope (only issues that were part of this sprint)
+          // Exclude punted/removed issues from the total story points calculation
           const completedIssues = sprintReport.contents?.completedIssues || [];
           const incompleteIssues = sprintReport.contents?.issuesNotCompletedInCurrentSprint || [];
           const puntedIssues = sprintReport.contents?.puntedIssues || [];
           
+          console.log(`\n📊 ============ Sprint ${sprintId} (Backend) ============`);
+          console.log(`Sprint Name: ${sprintReport.sprint?.name}`);
+          console.log(`Sprint State: ${sprintReport.sprint?.state}`);
+          
           let actualSprintTotalPoints = 0;
           
-          // Count story points from all issues that were actually part of this sprint
-          [...completedIssues, ...incompleteIssues, ...puntedIssues].forEach(issue => {
+          console.log(`\n✅ COMPLETED ISSUES (${completedIssues.length}):`);
+          completedIssues.forEach(issue => {
             const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
                                issue.estimateStatistic?.statFieldValue?.value || 0;
             actualSprintTotalPoints += storyPoints;
+            console.log(`  ${issue.key}: ${storyPoints} SP`);
           });
+          
+          console.log(`\n⏳ INCOMPLETE ISSUES (${incompleteIssues.length}):`);
+          incompleteIssues.forEach(issue => {
+            const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
+                               issue.estimateStatistic?.statFieldValue?.value || 0;
+            actualSprintTotalPoints += storyPoints;
+            console.log(`  ${issue.key}: ${storyPoints} SP`);
+          });
+          
+          console.log(`\n🚫 PUNTED/REMOVED ISSUES (${puntedIssues.length}) - EXCLUDED:`);
+          puntedIssues.forEach(issue => {
+            const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
+                               issue.estimateStatistic?.statFieldValue?.value || 0;
+            console.log(`  ${issue.key}: ${storyPoints} SP (not counted)`);
+          });
+          
+          const completedStoryPoints = sprintReport.contents?.completedIssuesEstimateSum?.value || 0;
+          console.log(`\n📈 TOTALS:`);
+          console.log(`  Total Story Points: ${actualSprintTotalPoints} SP`);
+          console.log(`  Completed: ${completedStoryPoints} SP`);
+          console.log(`  Total Issues: ${completedIssues.length + incompleteIssues.length}`);
+          console.log(`  Punted (excluded): ${puntedIssues.length}`);
           
           // Extract Sprint Goal ticket's original estimate (if exists)
           let sprintGoalDevDays = undefined;
@@ -284,6 +312,25 @@ router.post('/velocity-report', async (req, res) => {
             }
           }
           
+          // Prepare detailed issue breakdown for UI
+          const issueDetails = {
+            completed: completedIssues.map(issue => ({
+              key: issue.key,
+              storyPoints: parseFloat(issue.estimateStatistic?.statFieldValue?.value) || 0,
+              isAddedDuringSprint: issue.added === true
+            })),
+            incomplete: incompleteIssues.map(issue => ({
+              key: issue.key,
+              storyPoints: parseFloat(issue.estimateStatistic?.statFieldValue?.value) || 0,
+              isAddedDuringSprint: issue.added === true
+            })),
+            punted: puntedIssues.map(issue => ({
+              key: issue.key,
+              storyPoints: parseFloat(issue.estimateStatistic?.statFieldValue?.value) || 0,
+              isAddedDuringSprint: false // punted issues are not tracked for "added during sprint"
+            }))
+          };
+          
           return {
             sprintId,
             sprint: sprintReport.sprint,
@@ -293,7 +340,8 @@ router.post('/velocity-report', async (req, res) => {
             totalIssues: completedIssues.length + incompleteIssues.length + puntedIssues.length,
             devDaysAvailable: sprintGoalDevDays,
             devDaysSource: devDaysSource,
-            sprintGoalTicketKey: sprintGoalTicketKey
+            sprintGoalTicketKey: sprintGoalTicketKey,
+            issueDetails: issueDetails
           };
         } catch (error) {
           console.error(`Error fetching sprint ${sprintId}:`, error);

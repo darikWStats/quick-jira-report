@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -7,9 +7,23 @@ import {
   Chip,
   TextField,
   Tooltip,
-  IconButton
+  IconButton,
+  Collapse,
+  Divider,
+  List,
+  ListItem,
+  ListItemText
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+
+interface IssueDetail {
+  key: string;
+  storyPoints: number;
+  isAddedDuringSprint?: boolean;
+  type: 'completed' | 'incomplete' | 'punted';
+}
 
 interface Sprint {
   sprintId: string;
@@ -32,6 +46,11 @@ interface Sprint {
   initialSprintStoryPoints?: number;
   devDaysSource?: 'sprint-goal' | 'sprint-goal-api' | 'manual' | 'empty' | 'active-sprint';
   sprintGoalTicketKey?: string;
+  issueDetails?: {
+    completed: IssueDetail[];
+    incomplete: IssueDetail[];
+    punted: IssueDetail[];
+  };
 }
 
 interface SprintBreakdownCardsProps {
@@ -40,26 +59,52 @@ interface SprintBreakdownCardsProps {
 }
 
 export function SprintBreakdownCards({ sprints, onDevDaysChange }: SprintBreakdownCardsProps) {
+  const [expandedSprints, setExpandedSprints] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (sprintId: string) => {
+    setExpandedSprints(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sprintId)) {
+        newSet.delete(sprintId);
+      } else {
+        newSet.add(sprintId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <Box sx={{ mb: 4 }}>
       <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
         📊 Sprint-by-Sprint Breakdown
       </Typography>
       <Box sx={{ display: 'grid', gap: 1.5 }}>
-        {sprints.map((sprint: Sprint, index: number) => (
-          <Card key={sprint.sprintId} variant="outlined" sx={{ border: '1px solid #e0e0e0' }}>
-            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                  {sprint.sprint?.name || `Sprint ${index + 1}`}
-                </Typography>
-                <Chip 
-                  label={sprint.sprint?.state || 'Unknown'} 
-                  color={sprint.sprint?.state === 'closed' ? 'success' : 'default'}
-                  size="small"
-                  sx={{ height: 20, fontSize: '0.75rem' }}
-                />
-              </Box>
+        {sprints.map((sprint: Sprint, index: number) => {
+          const isExpanded = expandedSprints.has(sprint.sprintId);
+          
+          return (
+            <Card key={sprint.sprintId} variant="outlined" sx={{ border: '1px solid #e0e0e0' }}>
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                      {sprint.sprint?.name || `Sprint ${index + 1}`}
+                    </Typography>
+                    <IconButton 
+                      size="small" 
+                      onClick={() => toggleExpand(sprint.sprintId)}
+                      sx={{ padding: '2px' }}
+                    >
+                      {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                    </IconButton>
+                  </Box>
+                  <Chip 
+                    label={sprint.sprint?.state || 'Unknown'} 
+                    color={sprint.sprint?.state === 'closed' ? 'success' : 'default'}
+                    size="small"
+                    sx={{ height: 20, fontSize: '0.75rem' }}
+                  />
+                </Box>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 1.5 }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
@@ -192,9 +237,163 @@ export function SprintBreakdownCards({ sprints, onDevDaysChange }: SprintBreakdo
                   </Tooltip>
                 </Box>
               </Box>
+
+              {/* Expandable Detailed Breakdown */}
+              <Collapse in={isExpanded}>
+                <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1.5, color: 'primary.main' }}>
+                    📋 Detailed Breakdown
+                  </Typography>
+
+                  {/* Calculation Summary */}
+                  <Box sx={{ mb: 2, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
+                      📈 Calculation Summary
+                    </Typography>
+                    <Box sx={{ display: 'grid', gap: 0.5, fontSize: '0.75rem' }}>
+                      <Typography variant="caption">
+                        • Total Story Points: <strong>{sprint.totalStoryPoints} SP</strong> (Completed: {sprint.completedStoryPoints} SP, Incomplete: {sprint.totalStoryPoints - sprint.completedStoryPoints} SP)
+                      </Typography>
+                      <Typography variant="caption">
+                        • Scope Creep: <strong>{sprint.storyPointsAddedDuringSprint} SP</strong> added mid-sprint
+                      </Typography>
+                      <Typography variant="caption">
+                        • Initial Planned Points: <strong>{sprint.initialSprintStoryPoints || 0} SP</strong>
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                        Formula: {sprint.totalStoryPoints} (total) - {sprint.storyPointsAddedDuringSprint} (added) = {sprint.initialSprintStoryPoints || 0}
+                      </Typography>
+                      <Typography variant="caption">
+                        • Completed from Initial: <strong>{sprint.completedStoryPointsFromInitialIssues || 0} SP</strong>
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Completion Rates */}
+                  <Box sx={{ mb: 2, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
+                      📊 Completion Rates
+                    </Typography>
+                    <Box sx={{ display: 'grid', gap: 0.5, fontSize: '0.75rem' }}>
+                      <Typography variant="caption">
+                        • Overall: <strong>{sprint.overallCompletionRate.toFixed(1)}%</strong>
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.secondary', pl: 2 }}>
+                        ({sprint.completedStoryPoints} completed / {sprint.totalStoryPoints} total) × 100
+                      </Typography>
+                      <Typography variant="caption">
+                        • Initial Work: <strong>{sprint.initialWorkCompletionRate.toFixed(1)}%</strong>
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.secondary', pl: 2 }}>
+                        ({sprint.completedStoryPointsFromInitialIssues || 0} from initial / {sprint.initialSprintStoryPoints || 0} planned) × 100
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Issue Details */}
+                  {sprint.issueDetails && (
+                    <>
+                      {sprint.issueDetails.completed.length > 0 && (
+                        <Box sx={{ mb: 1.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'success.main' }}>
+                            ✅ Completed Issues ({sprint.issueDetails.completed.length})
+                          </Typography>
+                          <List dense sx={{ py: 0 }}>
+                            {sprint.issueDetails.completed.map((issue) => (
+                              <ListItem key={issue.key} sx={{ py: 0.25, px: 1 }}>
+                                <ListItemText
+                                  primary={
+                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                                      {issue.key}: {issue.storyPoints} SP 
+                                      {issue.isAddedDuringSprint && (
+                                        <Chip label="Added" size="small" sx={{ ml: 0.5, height: 16, fontSize: '0.65rem' }} color="warning" />
+                                      )}
+                                    </Typography>
+                                  }
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+
+                      {sprint.issueDetails.incomplete.length > 0 && (
+                        <Box sx={{ mb: 1.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'warning.main' }}>
+                            ⏳ Incomplete Issues ({sprint.issueDetails.incomplete.length})
+                          </Typography>
+                          <List dense sx={{ py: 0 }}>
+                            {sprint.issueDetails.incomplete.map((issue) => (
+                              <ListItem key={issue.key} sx={{ py: 0.25, px: 1 }}>
+                                <ListItemText
+                                  primary={
+                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                                      {issue.key}: {issue.storyPoints} SP
+                                      {issue.isAddedDuringSprint && (
+                                        <Chip label="Added" size="small" sx={{ ml: 0.5, height: 16, fontSize: '0.65rem' }} color="warning" />
+                                      )}
+                                    </Typography>
+                                  }
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+
+                      {sprint.issueDetails.punted.length > 0 && (
+                        <Box sx={{ mb: 1.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5, color: 'error.main' }}>
+                            🚫 Punted Issues ({sprint.issueDetails.punted.length}) - Excluded from Total
+                          </Typography>
+                          <List dense sx={{ py: 0 }}>
+                            {sprint.issueDetails.punted.map((issue) => (
+                              <ListItem key={issue.key} sx={{ py: 0.25, px: 1 }}>
+                                <ListItemText
+                                  primary={
+                                    <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+                                      {issue.key}: {issue.storyPoints} SP (not counted)
+                                    </Typography>
+                                  }
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
+                      )}
+                    </>
+                  )}
+
+                  {/* Issues Summary */}
+                  <Box sx={{ p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
+                      🎯 Issues Summary
+                    </Typography>
+                    <Box sx={{ display: 'grid', gap: 0.5, fontSize: '0.75rem' }}>
+                      <Typography variant="caption">
+                        • Total Issues: <strong>{sprint.totalIssues + sprint.puntedIssues}</strong>
+                      </Typography>
+                      <Typography variant="caption" sx={{ pl: 2 }}>
+                        - Completed: {sprint.completedIssues}
+                      </Typography>
+                      <Typography variant="caption" sx={{ pl: 2 }}>
+                        - Incomplete: {sprint.incompleteIssues}
+                      </Typography>
+                      <Typography variant="caption" sx={{ pl: 2 }}>
+                        - Punted: {sprint.puntedIssues}
+                      </Typography>
+                      <Typography variant="caption" sx={{ pl: 2 }}>
+                        - Added During Sprint: {sprint.issuesAddedDuringSprint}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </Collapse>
+
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </Box>
     </Box>
   );

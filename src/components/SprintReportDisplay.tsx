@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -29,7 +29,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AddIcon from '@mui/icons-material/Add';
-import { Sprint } from '../services/api';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Sprint, ApiService } from '../services/api';
 import { FormData as FormDataType } from '../utils/validation';
 
 // Sprint Report Display interfaces
@@ -70,6 +71,7 @@ interface SprintReportData {
     id: string | number;
     name: string;
     state: string;
+    goal?: string;
   };
   contents?: SprintReportContents;
 }
@@ -359,6 +361,7 @@ export function SprintReportDisplay({
             const issuesAddedCount = Object.keys(issueKeysAddedDuringSprint).length;
             
             // Calculate story points for issues that were actually part of this sprint
+            // Exclude punted/removed issues from the total story points calculation
             let actualSprintTotalPoints = 0;
             let storyPointsAddedDuringSprint = 0;
             let completedStoryPointsFromInitialIssues = 0;
@@ -383,14 +386,10 @@ export function SprintReportDisplay({
               actualSprintTotalPoints += storyPoints;
             });
             
-            // Count punted issues that were part of this sprint
-            puntedIssues.forEach(issue => {
-              const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
-                                 issue.estimateStatistic?.statFieldValue?.value || 0;
-              actualSprintTotalPoints += storyPoints;
-            });
+            // Note: Punted/removed issues are excluded from total story points calculation
+            // They are tracked separately for reporting purposes
             
-            // Use actual sprint scope instead of Jira's allIssuesEstimateSum
+            // Use actual sprint scope (excluding punted issues) instead of Jira's allIssuesEstimateSum
             const allIssuesEstimateSum = actualSprintTotalPoints;
             
             // Calculate initial sprint story points (excluding mid-sprint additions)
@@ -401,6 +400,70 @@ export function SprintReportDisplay({
               ((completedEstimateSum / allIssuesEstimateSum) * 100) : 0;
             const initialWorkCompletionPercentage = initialSprintStoryPoints > 0 ? 
               ((completedStoryPointsFromInitialIssues / initialSprintStoryPoints) * 100) : 0;
+
+            // Extract Sprint Goal ticket's dev days
+            const [devDays, setDevDays] = useState<number | undefined>(undefined);
+            const [devDaysSource, setDevDaysSource] = useState<string>('empty');
+            const [sprintGoalTicketKey, setSprintGoalTicketKey] = useState<string | undefined>(undefined);
+
+            useEffect(() => {
+              const extractDevDays = async () => {
+                const sprintState = reportData.sprint?.state?.toLowerCase();
+                const isActiveSprint = sprintState === 'active';
+                
+                // Skip dev days extraction for active sprints
+                if (isActiveSprint) {
+                  setDevDaysSource('active-sprint');
+                  return;
+                }
+                
+                const allIssues = [...completedIssues, ...incompleteIssues, ...puntedIssues];
+                const sprintGoal = reportData.sprint?.goal;
+                
+                // Find Sprint Goal ticket
+                const sprintGoalTicket = allIssues.find((issue: any) => {
+                  const issueTypeName = issue.typeName?.toLowerCase() || '';
+                  const isSprintGoalType = issueTypeName.includes('sprint goal') || issueTypeName === 'goal';
+                  
+                  const summary = issue.summary?.toLowerCase() || '';
+                  const matchesGoal = sprintGoal && summary.includes(sprintGoal.toLowerCase());
+                  
+                  return isSprintGoalType || matchesGoal;
+                });
+                
+                if (sprintGoalTicket) {
+                  setSprintGoalTicketKey(sprintGoalTicket.key);
+                  
+                  let originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
+                                                 sprintGoalTicket.trackingStatistic?.statFieldValue?.value || 0;
+                  
+                  if (originalEstimateSeconds > 0 && originalEstimateSeconds > 1000) {
+                    setDevDaysSource('sprint-goal');
+                  } else {
+                    try {
+                      const authData = {
+                        jiraHost: formData.jiraHost,
+                        email: formData.email,
+                        jiraToken: formData.jiraToken
+                      };
+                      const issueData = await ApiService.getIssue(authData, sprintGoalTicket.key);
+                      originalEstimateSeconds = issueData.fields?.timetracking?.originalEstimateSeconds || 0;
+                      if (originalEstimateSeconds > 0) {
+                        setDevDaysSource('sprint-goal-api');
+                      }
+                    } catch (error) {
+                      console.error(`Failed to fetch issue ${sprintGoalTicket.key}:`, error);
+                    }
+                  }
+                  
+                  if (originalEstimateSeconds > 0) {
+                    setDevDays(originalEstimateSeconds / 28800); // Convert seconds to days
+                  }
+                }
+              };
+              
+              extractDevDays();
+            }, [reportData]);
 
             return (
               <>
@@ -482,6 +545,41 @@ export function SprintReportDisplay({
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#80868b' }}>
                           Points Added Mid-Sprint
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent sx={{ textAlign: 'center', py: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                          <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#9c27b0' }}>
+                            {devDays !== undefined ? devDays.toFixed(1) : '-'}
+                          </Typography>
+                          <Tooltip 
+                            title={
+                              devDaysSource === 'active-sprint'
+                                ? 'Active sprint - dev days not auto-filled'
+                                : devDaysSource === 'sprint-goal' 
+                                ? `Auto-filled from Sprint Goal ticket (${sprintGoalTicketKey || 'unknown'}) original estimate in sprint report`
+                                : devDaysSource === 'sprint-goal-api'
+                                ? `Auto-filled from Sprint Goal ticket (${sprintGoalTicketKey || 'unknown'}) via Jira API`
+                                : 'No Sprint Goal ticket found'
+                            }
+                            arrow
+                            placement="top"
+                          >
+                            <InfoOutlinedIcon 
+                              sx={{ 
+                                fontSize: '16px', 
+                                color: devDaysSource === 'sprint-goal' || devDaysSource === 'sprint-goal-api' 
+                                  ? 'info.main' 
+                                  : 'text.secondary',
+                                mt: 0.5
+                              }} 
+                            />
+                          </Tooltip>
+                        </Box>
+                        <Typography variant="body2" sx={{ color: '#80868b' }}>
+                          Dev Days Available
                         </Typography>
                       </CardContent>
                     </Card>

@@ -341,17 +341,26 @@ export function JiraReportApp() {
           const issuesAddedCount = Object.keys(issueKeysAddedDuringSprint).length;
           
           // Calculate story points for issues that were actually part of this sprint
+          // Exclude punted/removed issues from the total story points calculation
           let actualSprintTotalPoints = 0;
           let storyPointsAddedDuringSprint = 0;
           let completedStoryPointsFromInitialIssues = 0;
           
+          console.log(`\n📊 ============ Sprint ${sprintId} Detailed Breakdown ============`);
+          console.log(`Sprint Name: ${sprintReport.sprint?.name}`);
+          console.log(`Sprint State: ${sprintReport.sprint?.state}`);
+          
           // Count completed issues that were part of this sprint
+          console.log(`\n✅ COMPLETED ISSUES (${completedIssues.length}):`);
           completedIssues.forEach((issue: any) => {
             const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
                                issue.estimateStatistic?.statFieldValue?.value || 0;
+            const isAddedDuringSprint = !!issueKeysAddedDuringSprint[issue.key];
             actualSprintTotalPoints += storyPoints;
             
-            if (issueKeysAddedDuringSprint[issue.key]) {
+            console.log(`  ${issue.key}: ${storyPoints} SP ${isAddedDuringSprint ? '🆕 (Added mid-sprint)' : '📋 (Initial)'}`);
+            
+            if (isAddedDuringSprint) {
               storyPointsAddedDuringSprint += storyPoints;
             } else {
               completedStoryPointsFromInitialIssues += storyPoints;
@@ -359,17 +368,27 @@ export function JiraReportApp() {
           });
           
           // Count incomplete issues that were part of this sprint
+          console.log(`\n⏳ INCOMPLETE ISSUES (${incompleteIssues.length}):`);
           incompleteIssues.forEach((issue: any) => {
             const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
                                issue.estimateStatistic?.statFieldValue?.value || 0;
+            const isAddedDuringSprint = !!issueKeysAddedDuringSprint[issue.key];
             actualSprintTotalPoints += storyPoints;
+            
+            console.log(`  ${issue.key}: ${storyPoints} SP ${isAddedDuringSprint ? '🆕 (Added mid-sprint)' : '📋 (Initial)'}`);
+            
+            if (isAddedDuringSprint) {
+              storyPointsAddedDuringSprint += storyPoints;
+            }
           });
           
-          // Count punted issues that were part of this sprint
+          // Note: Punted/removed issues are excluded from total story points calculation
+          // They are tracked separately for reporting purposes
+          console.log(`\n🚫 PUNTED/REMOVED ISSUES (${puntedIssues.length}) - EXCLUDED FROM TOTAL:`);
           puntedIssues.forEach((issue: any) => {
             const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
                                issue.estimateStatistic?.statFieldValue?.value || 0;
-            actualSprintTotalPoints += storyPoints;
+            console.log(`  ${issue.key}: ${storyPoints} SP (not counted in total)`);
           });
           
           // Use actual sprint scope instead of Jira's allIssuesEstimateSum
@@ -378,6 +397,26 @@ export function JiraReportApp() {
           const overallCompletionRate = totalStoryPoints > 0 ? (completedStoryPoints / totalStoryPoints) * 100 : 0;
           const initialWorkCompletionRate = initialSprintStoryPoints > 0 ? 
             (completedStoryPointsFromInitialIssues / initialSprintStoryPoints) * 100 : 0;
+
+          console.log(`\n📈 CALCULATION SUMMARY:`);
+          console.log(`  Total Story Points (Completed + Incomplete): ${totalStoryPoints} SP`);
+          console.log(`    - Completed: ${completedStoryPoints} SP`);
+          console.log(`    - Incomplete: ${totalStoryPoints - completedStoryPoints} SP`);
+          console.log(`  Scope Creep (Added Mid-Sprint): ${storyPointsAddedDuringSprint} SP`);
+          console.log(`  Initial Planned Points: ${initialSprintStoryPoints} SP`);
+          console.log(`    Formula: ${totalStoryPoints} (total) - ${storyPointsAddedDuringSprint} (added) = ${initialSprintStoryPoints}`);
+          console.log(`  Completed from Initial: ${completedStoryPointsFromInitialIssues} SP`);
+          console.log(`\n📊 COMPLETION RATES:`);
+          console.log(`  Overall Completion Rate: ${overallCompletionRate.toFixed(1)}%`);
+          console.log(`    Formula: (${completedStoryPoints} completed / ${totalStoryPoints} total) × 100`);
+          console.log(`  Initial Work Completion Rate: ${initialWorkCompletionRate.toFixed(1)}%`);
+          console.log(`    Formula: (${completedStoryPointsFromInitialIssues} completed from initial / ${initialSprintStoryPoints} initial planned) × 100`);
+          console.log(`\n🎯 ISSUES SUMMARY:`);
+          console.log(`  Total Issues: ${completedIssues.length + incompleteIssues.length + puntedIssues.length}`);
+          console.log(`    - Completed: ${completedIssues.length}`);
+          console.log(`    - Incomplete: ${incompleteIssues.length}`);
+          console.log(`    - Punted: ${puntedIssues.length}`);
+          console.log(`    - Added During Sprint: ${issuesAddedCount}`);
 
           // Extract Sprint Goal ticket's original estimate (if exists)
           let sprintGoalDevDays = undefined;
@@ -449,12 +488,8 @@ export function JiraReportApp() {
             }
           }
 
-          console.log(`✅ Sprint ${sprintId} analysis complete:`, {
-            completedStoryPoints,
-            totalStoryPoints,
-            overallCompletionRate: overallCompletionRate.toFixed(1) + '%',
-            devDaysAvailable: sprintGoalDevDays
-          });
+          console.log(`✅ Sprint ${sprintId} (${sprintReport.sprint?.name}) analysis complete!`);
+          console.log(`========================================================\n`);
 
           return {
             sprintId,
