@@ -31,6 +31,36 @@ class JiraService {
   }
 
   /**
+   * Get a specific issue from Jira
+   * @param {Object} params - Request parameters
+   * @param {string} params.jiraHost - Jira host URL
+   * @param {string} params.email - User email
+   * @param {string} params.jiraToken - Jira API token
+   * @param {string} params.issueKey - Issue key (e.g., 'PROJ-123')
+   * @returns {Promise<Object>} Issue data
+   */
+  async getIssue({ jiraHost, email, jiraToken, issueKey }) {
+    const url = `${jiraHost}/rest/api/3/issue/${issueKey}`;
+    
+    const credentials = Buffer.from(`${email}:${jiraToken}`).toString('base64');
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+    }
+
+    return await response.json();
+  }
+
+  /**
    * Get available boards from Jira
    * @param {Object} params - Request parameters
    * @param {string} params.jiraHost - Jira host URL

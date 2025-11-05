@@ -399,8 +399,22 @@ export function JiraReportApp() {
           
           if (sprintGoalTicket) {
             // Extract original estimate in seconds and convert to days (8 hours = 1 day)
-            const originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
+            let originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
                                            sprintGoalTicket.trackingStatistic?.statFieldValue?.value || 0;
+            
+            // Fallback: If estimation is zero or empty, fetch the issue directly from Jira API
+            if (!originalEstimateSeconds || originalEstimateSeconds === 0) {
+              try {
+                console.log(`⚠️ No estimate found in sprint report for ${sprintGoalTicket.key}, fetching directly from Jira API...`);
+                const issueData = await ApiService.getIssue(authData, sprintGoalTicket.key);
+                
+                // Extract original estimate from the issue fields
+                originalEstimateSeconds = issueData.fields?.timetracking?.originalEstimateSeconds || 0;
+                console.log(`✅ Fetched original estimate from Jira API: ${originalEstimateSeconds} seconds`);
+              } catch (error) {
+                console.error(`❌ Failed to fetch issue ${sprintGoalTicket.key} from Jira API:`, (error as Error).message);
+              }
+            }
             
             // Convert seconds to days (assuming 8-hour workday = 28800 seconds)
             if (originalEstimateSeconds > 0) {

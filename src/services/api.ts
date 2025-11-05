@@ -266,4 +266,35 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Method to fetch a specific issue
+  static async getIssue(authData: Partial<AuthData>, issueKey: string): Promise<any> {
+    try {
+      const payload: any = {
+        issueKey
+      };
+
+      if (authData.jiraHost) payload.jiraHost = authData.jiraHost;
+      if (authData.email) payload.email = authData.email;
+      if (authData.jiraToken) payload.jiraToken = authData.jiraToken;
+
+      const response = await fetch('/api/issue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API Error fetching issue:', error);
+      throw error;
+    }
+  }
 }
