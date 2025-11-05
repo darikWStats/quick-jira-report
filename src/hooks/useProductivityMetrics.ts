@@ -4,7 +4,7 @@ interface Sprint {
   sprintId: string;
   sprint?: { name: string };
   completedStoryPoints: number;
-  devDaysAvailable: number;
+  devDaysAvailable?: number;
 }
 
 interface SprintWithProductivity extends Sprint {
@@ -37,14 +37,14 @@ export function useProductivityMetrics(sprints: Sprint[]): ProductivityMetrics |
       sum + sprint.completedStoryPoints, 0
     );
     const totalDevDays = sprintsWithDevDays.reduce((sum: number, sprint: Sprint) => 
-      sum + sprint.devDaysAvailable, 0
+      sum + (sprint.devDaysAvailable || 0), 0
     );
     const averageStoryPointsPerDevDay = totalDevDays > 0 ? totalStoryPoints / totalDevDays : 0;
     
     // Calculate individual sprint productivity
     const sprintProductivity: SprintWithProductivity[] = sprintsWithDevDays.map((sprint: Sprint) => ({
       ...sprint,
-      storyPointsPerDevDay: sprint.devDaysAvailable > 0 ? 
+      storyPointsPerDevDay: (sprint.devDaysAvailable && sprint.devDaysAvailable > 0) ? 
         sprint.completedStoryPoints / sprint.devDaysAvailable : 0
     }));
 
