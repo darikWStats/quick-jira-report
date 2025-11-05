@@ -30,7 +30,7 @@ interface Sprint {
   devDaysAvailable?: number;
   completedStoryPointsFromInitialIssues?: number;
   initialSprintStoryPoints?: number;
-  devDaysSource?: 'sprint-goal' | 'sprint-goal-api' | 'manual' | 'empty';
+  devDaysSource?: 'sprint-goal' | 'sprint-goal-api' | 'manual' | 'empty' | 'active-sprint';
   sprintGoalTicketKey?: string;
 }
 
@@ -165,7 +165,9 @@ export function SprintBreakdownCards({ sprints, onDevDaysChange }: SprintBreakdo
                   </Typography>
                   <Tooltip 
                     title={
-                      sprint.devDaysSource === 'sprint-goal' 
+                      sprint.devDaysSource === 'active-sprint'
+                        ? 'Active sprint - dev days not auto-filled. Please enter manually if needed.'
+                        : sprint.devDaysSource === 'sprint-goal' 
                         ? `Auto-filled from Sprint Goal ticket (${sprint.sprintGoalTicketKey || 'unknown'}) original estimate in sprint report`
                         : sprint.devDaysSource === 'sprint-goal-api'
                         ? `Auto-filled from Sprint Goal ticket (${sprint.sprintGoalTicketKey || 'unknown'}) via Jira API (fallback - not found in sprint report)`

@@ -384,60 +384,69 @@ export function JiraReportApp() {
           let devDaysSource = 'empty';
           let sprintGoalTicketKey = undefined;
           
-          const allIssues = [...completedIssues, ...incompleteIssues, ...puntedIssues];
-          const sprintGoal = sprintReport.sprint?.goal;
+          const sprintState = sprintReport.sprint?.state?.toLowerCase();
+          const isActiveSprint = sprintState === 'active';
           
-          // Find Sprint Goal ticket by matching sprint goal text in issue summary or checking issue type
-          const sprintGoalTicket = allIssues.find((issue: any) => {
-            // Check if issue type is "Sprint Goal" or similar
-            const issueTypeName = issue.typeName?.toLowerCase() || '';
-            const isSprintGoalType = issueTypeName.includes('sprint goal') || issueTypeName === 'goal';
+          // Skip dev days extraction for active sprints
+          if (isActiveSprint) {
+            devDaysSource = 'active-sprint';
+            console.log(`⏭️ Skipping dev days extraction for active sprint ${sprintId}`);
+          } else {
+            const allIssues = [...completedIssues, ...incompleteIssues, ...puntedIssues];
+            const sprintGoal = sprintReport.sprint?.goal;
             
-            // Also check if issue summary matches the sprint goal
-            const summary = issue.summary?.toLowerCase() || '';
-            const matchesGoal = sprintGoal && summary.includes(sprintGoal.toLowerCase());
-            
-            return isSprintGoalType || matchesGoal;
-          });
-          
-          if (sprintGoalTicket) {
-            sprintGoalTicketKey = sprintGoalTicket.key;
-            
-            // Extract original estimate in seconds and convert to days (8 hours = 1 day)
-            let originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
-                                           sprintGoalTicket.trackingStatistic?.statFieldValue?.value || 0;
-            
-            // Check if we got a value from sprint report
-            if (originalEstimateSeconds > 0) {
-              devDaysSource = 'sprint-goal';
-            } else {
-              // Fallback: If estimation is zero or empty, fetch the issue directly from Jira API
-              try {
-                console.log(`⚠️ No estimate found in sprint report for ${sprintGoalTicket.key}, fetching directly from Jira API...`);
-                const issueData = await ApiService.getIssue(authData, sprintGoalTicket.key);
-                
-                // Extract original estimate from the issue fields
-                originalEstimateSeconds = issueData.fields?.timetracking?.originalEstimateSeconds || 0;
-                if (originalEstimateSeconds > 0) {
-                  devDaysSource = 'sprint-goal-api';
-                }
-                console.log(`✅ Fetched original estimate from Jira API: ${originalEstimateSeconds} seconds`);
-              } catch (error) {
-                console.error(`❌ Failed to fetch issue ${sprintGoalTicket.key} from Jira API:`, (error as Error).message);
-              }
-            }
-            
-            // Convert seconds to days (assuming 8-hour workday = 28800 seconds)
-            if (originalEstimateSeconds > 0) {
-              sprintGoalDevDays = originalEstimateSeconds / 28800; // 8 hours * 60 min * 60 sec = 28800
-            }
-            
-            console.log(`✅ Sprint Goal ticket found for sprint ${sprintId}:`, {
-              key: sprintGoalTicket.key,
-              originalEstimateSeconds,
-              devDays: sprintGoalDevDays,
-              source: devDaysSource
+            // Find Sprint Goal ticket by matching sprint goal text in issue summary or checking issue type
+            const sprintGoalTicket = allIssues.find((issue: any) => {
+              // Check if issue type is "Sprint Goal" or similar
+              const issueTypeName = issue.typeName?.toLowerCase() || '';
+              const isSprintGoalType = issueTypeName.includes('sprint goal') || issueTypeName === 'goal';
+              
+              // Also check if issue summary matches the sprint goal
+              const summary = issue.summary?.toLowerCase() || '';
+              const matchesGoal = sprintGoal && summary.includes(sprintGoal.toLowerCase());
+              
+              return isSprintGoalType || matchesGoal;
             });
+            
+            if (sprintGoalTicket) {
+              sprintGoalTicketKey = sprintGoalTicket.key;
+              
+              // Extract original estimate in seconds and convert to days (8 hours = 1 day)
+              let originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
+                                             sprintGoalTicket.trackingStatistic?.statFieldValue?.value || 0;
+              
+              // Check if we got a valid value from sprint report (should be in seconds, not story points)
+              if (originalEstimateSeconds > 0 && originalEstimateSeconds > 1000) {
+                devDaysSource = 'sprint-goal';
+              } else {
+                // Fallback: If estimation is zero or empty, fetch the issue directly from Jira API
+                try {
+                  console.log(`⚠️ No estimate found in sprint report for ${sprintGoalTicket.key}, fetching directly from Jira API...`);
+                  const issueData = await ApiService.getIssue(authData, sprintGoalTicket.key);
+                  
+                  // Extract original estimate from the issue fields
+                  originalEstimateSeconds = issueData.fields?.timetracking?.originalEstimateSeconds || 0;
+                  if (originalEstimateSeconds > 0) {
+                    devDaysSource = 'sprint-goal-api';
+                  }
+                  console.log(`✅ Fetched original estimate from Jira API: ${originalEstimateSeconds} seconds`);
+                } catch (error) {
+                  console.error(`❌ Failed to fetch issue ${sprintGoalTicket.key} from Jira API:`, (error as Error).message);
+                }
+              }
+              
+              // Convert seconds to days (assuming 8-hour workday = 28800 seconds)
+              if (originalEstimateSeconds > 0) {
+                sprintGoalDevDays = originalEstimateSeconds / 28800; // 8 hours * 60 min * 60 sec = 28800
+              }
+              
+              console.log(`✅ Sprint Goal ticket found for sprint ${sprintId}:`, {
+                key: sprintGoalTicket.key,
+                originalEstimateSeconds,
+                devDays: sprintGoalDevDays,
+                source: devDaysSource
+              });
+            }
           }
 
           console.log(`✅ Sprint ${sprintId} analysis complete:`, {
