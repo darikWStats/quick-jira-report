@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   ThemeProvider,
   CssBaseline,
@@ -9,567 +9,76 @@ import {
   Button,
   Box,
   CircularProgress,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   Alert,
-  Autocomplete,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Chip,
-  Link,
-  Badge,
-  IconButton,
-  Tooltip,
-  Card,
-  CardContent
+  Autocomplete
 } from '@mui/material';
 
-import { StorageUtil } from '../utils/storage';
-import { FormValidator, FormData as FormDataType } from '../utils/validation';
-import { ApiService, AuthData, Project, Board, Sprint, AppConfig } from '../services/api';
 import { theme } from '../theme/theme';
 import { ProjectBoardSelection } from './ProjectBoardSelection';
 import { LoginForm } from './LoginForm';
 import { ConfigurationStatus } from './ConfigurationStatus';
 import { VelocityAnalysisDisplay } from './VelocityAnalysisDisplay';
+import { useJiraAuth } from '../hooks/useJiraAuth';
+import { useProjectData } from '../hooks/useProjectData';
+import { useVelocityData } from '../hooks/useVelocityData';
 
 // Material-UI Icons
-import LoginIcon from '@mui/icons-material/Login';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import LogoutIcon from '@mui/icons-material/Logout';
-import AssessmentIcon from '@mui/icons-material/Assessment';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import SprintIcon from '@mui/icons-material/DirectionsRun';
-import FolderIcon from '@mui/icons-material/Folder';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import TaskIcon from '@mui/icons-material/Task';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SpeedIcon from '@mui/icons-material/Speed';
 
-interface SnackbarState {
-  open: boolean;
-  message: string;
-  severity: 'success' | 'error' | 'warning' | 'info';
-}
-
 export function JiraReportApp() {
-  const [formData, setFormData] = useState<FormDataType>({
-    jiraHost: '',
-    email: '',
-    jiraToken: '',
-    projectKey: '',
-    boardId: '',
-    sprintId: '',
-    rememberMe: false
-  });
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [selectedSprintIds, setSelectedSprintIds] = useState<string[]>([]);
-  const [reportData, setReportData] = useState<any>(null);
-  const [velocityData, setVelocityData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loadingLogin, setLoadingLogin] = useState(false);
-  const [loadingProjects, setLoadingProjects] = useState(false);
-  const [loadingBoards, setLoadingBoards] = useState(false);
-  const [loadingSprints, setLoadingSprints] = useState(false);
-  const [loadingVelocity, setLoadingVelocity] = useState(false);
-  const [error, setError] = useState<string>('');
-  const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
-  const [loadingConfig, setLoadingConfig] = useState(true);
-  const [nextSprintDevDays, setNextSprintDevDays] = useState<number>(0);
+  // Custom hooks for state management
+  const {
+    formData,
+    appConfig,
+    isLoggedIn,
+    loadingLogin,
+    loadingConfig,
+    projects,
+    error,
+    handleInputChange,
+    handleLogin,
+    handleLogout: authLogout,
+    canLogin,
+    showError,
+    setFormData,
+    setProjects,
+    setIsLoggedIn
+  } = useJiraAuth();
 
-  // Load configuration and saved data on component mount
-  useEffect(() => {
-    const loadAppConfig = async () => {
-      try {
-        setLoadingConfig(true);
-        const config = await ApiService.getConfig();
-        setAppConfig(config);
-        console.log('🔧 App Configuration Loaded:', config);
-        console.log('📊 Environment Status:', {
-          fullyConfigured: config.configurationStatus.fullyConfigured,
-          hasJiraHost: config.hasJiraHost,
-          hasJiraEmail: config.hasJiraEmail,
-          hasJiraToken: config.hasJiraToken,
-          missingCredentials: config.configurationStatus.missingCredentials
-        });
-        
-        // If server has environment variables, auto-fill them
-        if (config.hasJiraHost && config.jiraHost) {
-          setFormData(prev => ({ ...prev, jiraHost: config.jiraHost || '' }));
-          console.log('🔗 Auto-filled Jira Host from environment:', config.jiraHost);
-        }
-        if (config.hasJiraEmail && config.jiraEmail) {
-          setFormData(prev => ({ ...prev, email: config.jiraEmail || '' }));
-          console.log('📧 Auto-filled Jira Email from environment:', config.jiraEmail);
-        }
-        if (config.hasJiraToken) {
-          // Don't set the actual token value for security, but indicate it's available
-          console.log('🔐 Jira Token available from backend environment (not displayed for security)');
-        }
-        
-        // Log what will be auto-filled vs needs manual entry
-        const autoFilled: string[] = [];
-        const needsManual: string[] = [];
-        
-        if (config.hasJiraHost) autoFilled.push('JIRA_HOST');
-        else needsManual.push('JIRA_HOST');
-        
-        if (config.hasJiraEmail) autoFilled.push('JIRA_EMAIL');
-        else needsManual.push('JIRA_EMAIL');
-        
-        if (config.hasJiraToken) autoFilled.push('JIRA_TOKEN');
-        else needsManual.push('JIRA_TOKEN');
-        
-        console.log('✅ Auto-filled from environment:', autoFilled.length > 0 ? autoFilled.join(', ') : 'None');
-        console.log('⚠️  Requires manual entry:', needsManual.length > 0 ? needsManual.join(', ') : 'None');
-      } catch (error) {
-        console.error('Failed to load app configuration:', error);
-        showError('Failed to load app configuration');
-      } finally {
-        setLoadingConfig(false);
-      }
-    };
+  const {
+    boards,
+    sprints,
+    selectedProjectId,
+    selectedSprintIds,
+    loadingBoards,
+    loadingSprints,
+    handleProjectChange,
+    handleBoardChange,
+    handleSprintSelection,
+    setBoards,
+    setSprints,
+    setSelectedSprintIds
+  } = useProjectData({ formData, setFormData, showError, projects });
 
-    const loadSavedData = () => {
-      const savedJiraHost = StorageUtil.get('jiraHost');
-      const savedEmail = StorageUtil.get('email');
-      
-      if (savedJiraHost) setFormData(prev => ({ ...prev, jiraHost: savedJiraHost }));
-      if (savedEmail) setFormData(prev => ({ ...prev, email: savedEmail }));
-      
-      if (savedJiraHost || savedEmail) {
-        setFormData(prev => ({ ...prev, rememberMe: true }));
-      }
-    };
+  const {
+    velocityData,
+    nextSprintDevDays,
+    loadingVelocity,
+    calculateVelocity,
+    handleDevDaysChange,
+    setNextSprintDevDays,
+    setVelocityData
+  } = useVelocityData({ formData, selectedSprintIds, showError });
 
-    loadAppConfig();
-    loadSavedData();
-  }, []);
-
-  const handleInputChange = (field: keyof FormDataType) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSelectChange = (field: keyof FormDataType) => (event: any) => {
-    setFormData(prev => ({ ...prev, [field]: event.target.value }));
-  };
-
-  const showError = (message: string) => {
-    setError(message);
-    setTimeout(() => setError(''), 5000);
-  };
-
-  const canLogin = (): boolean => {
-    const hasHost = formData.jiraHost || appConfig?.hasJiraHost;
-    const hasEmail = formData.email || appConfig?.hasJiraEmail;
-    const hasToken = formData.jiraToken || appConfig?.hasJiraToken;
-    return Boolean(hasHost && hasEmail && hasToken);
-  };
-
-  const handleLogin = async () => {
-    // Check if required fields are available (either from form or backend)
-    const hasHost = formData.jiraHost || appConfig?.hasJiraHost;
-    const hasEmail = formData.email || appConfig?.hasJiraEmail;
-    const hasToken = formData.jiraToken || appConfig?.hasJiraToken;
-    
-    if (!hasHost || !hasEmail || !hasToken) {
-      showError('Please fill in all required authentication fields or ensure they are configured in backend environment');
-      return;
-    }
-
-    setLoadingLogin(true);
-    try {
-      const authData: AuthData = {
-        jiraHost: formData.jiraHost,
-        email: formData.email,
-        jiraToken: formData.jiraToken
-      };
-
-      // Test the connection by fetching projects
-      const projectsData = await ApiService.getProjects(authData);
-      setProjects(projectsData.projects || []);
-      setIsLoggedIn(true);
-
-      // Save auth data if "Remember me" is checked
-      if (formData.rememberMe) {
-        StorageUtil.save('jiraHost', formData.jiraHost);
-        StorageUtil.save('email', formData.email);
-      }
-    } catch (error) {
-      showError(`Authentication failed: ${(error as Error).message}`);
-    } finally {
-      setLoadingLogin(false);
-    }
-  };
-
+  // Enhanced logout that clears all data
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setProjects([]);
+    authLogout();
     setBoards([]);
-    setSprints([]);
-    setSelectedProjectId('');
-    setReportData(null);
-    setVelocityData(null);
-    setFormData(prev => ({ ...prev, boardId: '', sprintId: '' }));
-  };
-
-  const handleProjectChange = async (projectId: string) => {
-    setSelectedProjectId(projectId);
-    setBoards([]);
-    setSprints([]);
-    setFormData(prev => ({ ...prev, boardId: '', sprintId: '' }));
-    setReportData(null);
-    setVelocityData(null);
-
-    if (projectId) {
-      setLoadingBoards(true);
-      try {
-        const selectedProject = projects.find(p => p.id === projectId);
-        const authData: AuthData = {
-          jiraHost: formData.jiraHost,
-          email: formData.email,
-          jiraToken: formData.jiraToken
-        };
-        const boardsData = await ApiService.getBoards(authData, selectedProject?.key);
-        setBoards(boardsData.boards || []);
-      } catch (error) {
-        showError(`Error fetching boards: ${(error as Error).message}`);
-      } finally {
-        setLoadingBoards(false);
-      }
-    }
-  };
-
-  const handleBoardChange = async (boardId: string) => {
-    setFormData(prev => ({ ...prev, boardId, sprintId: '' }));
     setSprints([]);
     setSelectedSprintIds([]);
-    setReportData(null);
     setVelocityData(null);
-    
-    if (boardId) {
-      setLoadingSprints(true);
-      try {
-        const authData: AuthData = {
-          jiraHost: formData.jiraHost,
-          email: formData.email,
-          jiraToken: formData.jiraToken
-        };
-        const sprintsData = await ApiService.getSprints(authData, boardId);
-        setSprints(sprintsData.sprints || []);
-      } catch (error) {
-        showError(`Error fetching sprints: ${(error as Error).message}`);
-      } finally {
-        setLoadingSprints(false);
-      }
-    }
-  };
-
-  const handleSprintSelection = (sprintIds: string[]) => {
-    setSelectedSprintIds(sprintIds);
-  };
-
-  const handleSprintChange = (event: any, newValue: Sprint | null) => {
-    setFormData(prev => ({ ...prev, sprintId: newValue ? String(newValue.id) : '' }));
-  };
-
-  const canGenerateReport = (): boolean => {
-    return Boolean(formData.boardId && formData.sprintId);
-  };
-
-  const generateReport = async () => {
-    if (!canGenerateReport()) {
-      showError('Please select a board and sprint');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const reportDataResult = await ApiService.generateReport(formData);
-      setReportData(reportDataResult);
-    } catch (error) {
-      showError(`Error generating report: ${(error as Error).message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateVelocity = async () => {
-    if (selectedSprintIds.length === 0) {
-      showError('Please select at least one sprint');
-      return;
-    }
-
-    setLoadingVelocity(true);
-    try {
-      const authData: AuthData = {
-        jiraHost: formData.jiraHost,
-        email: formData.email,
-        jiraToken: formData.jiraToken
-      };
-
-      // Fetch individual sprint reports for detailed analysis
-      console.log('🔄 Fetching detailed sprint reports for velocity calculation...');
-      const sprintReports = await Promise.all(
-        selectedSprintIds.map(async (sprintId) => {
-          console.log(`📊 Fetching sprint report for sprint ${sprintId}...`);
-          const sprintReport = await ApiService.getSprintReport(authData, formData.boardId, sprintId);
-          
-          // Calculate enhanced metrics for each sprint (similar to postman script)
-          const completedIssues = sprintReport.contents?.completedIssues || [];
-          const issueKeysAddedDuringSprint = sprintReport.contents?.issueKeysAddedDuringSprint || {};
-          const puntedIssues = sprintReport.contents?.puntedIssues || [];
-          const incompleteIssues = sprintReport.contents?.issuesNotCompletedInCurrentSprint || [];
-          
-          const completedStoryPoints = sprintReport.contents?.completedIssuesEstimateSum?.value || 0;
-          const issuesAddedCount = Object.keys(issueKeysAddedDuringSprint).length;
-          
-          // Calculate story points for issues that were actually part of this sprint
-          // Exclude punted/removed issues from the total story points calculation
-          let actualSprintTotalPoints = 0;
-          let storyPointsAddedDuringSprint = 0;
-          let completedStoryPointsFromInitialIssues = 0;
-          
-          console.log(`\n📊 ============ Sprint ${sprintId} Detailed Breakdown ============`);
-          console.log(`Sprint Name: ${sprintReport.sprint?.name}`);
-          console.log(`Sprint State: ${sprintReport.sprint?.state}`);
-          
-          // Count completed issues that were part of this sprint
-          console.log(`\n✅ COMPLETED ISSUES (${completedIssues.length}):`);
-          completedIssues.forEach((issue: any) => {
-            const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
-                               issue.estimateStatistic?.statFieldValue?.value || 0;
-            const isAddedDuringSprint = !!issueKeysAddedDuringSprint[issue.key];
-            actualSprintTotalPoints += storyPoints;
-            
-            console.log(`  ${issue.key}: ${storyPoints} SP ${isAddedDuringSprint ? '🆕 (Added mid-sprint)' : '📋 (Initial)'}`);
-            
-            if (isAddedDuringSprint) {
-              storyPointsAddedDuringSprint += storyPoints;
-            } else {
-              completedStoryPointsFromInitialIssues += storyPoints;
-            }
-          });
-          
-          // Count incomplete issues that were part of this sprint
-          console.log(`\n⏳ INCOMPLETE ISSUES (${incompleteIssues.length}):`);
-          incompleteIssues.forEach((issue: any) => {
-            const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
-                               issue.estimateStatistic?.statFieldValue?.value || 0;
-            const isAddedDuringSprint = !!issueKeysAddedDuringSprint[issue.key];
-            actualSprintTotalPoints += storyPoints;
-            
-            console.log(`  ${issue.key}: ${storyPoints} SP ${isAddedDuringSprint ? '🆕 (Added mid-sprint)' : '📋 (Initial)'}`);
-            
-            if (isAddedDuringSprint) {
-              storyPointsAddedDuringSprint += storyPoints;
-            }
-          });
-          
-          // Note: Punted/removed issues are excluded from total story points calculation
-          // They are tracked separately for reporting purposes
-          console.log(`\n🚫 PUNTED/REMOVED ISSUES (${puntedIssues.length}) - EXCLUDED FROM TOTAL:`);
-          puntedIssues.forEach((issue: any) => {
-            const storyPoints = issue.currentEstimateStatistic?.statFieldValue?.value || 
-                               issue.estimateStatistic?.statFieldValue?.value || 0;
-            console.log(`  ${issue.key}: ${storyPoints} SP (not counted in total)`);
-          });
-          
-          // Use actual sprint scope instead of Jira's allIssuesEstimateSum
-          const totalStoryPoints = actualSprintTotalPoints;
-          const initialSprintStoryPoints = actualSprintTotalPoints - storyPointsAddedDuringSprint;
-          const overallCompletionRate = totalStoryPoints > 0 ? (completedStoryPoints / totalStoryPoints) * 100 : 0;
-          const initialWorkCompletionRate = initialSprintStoryPoints > 0 ? 
-            (completedStoryPointsFromInitialIssues / initialSprintStoryPoints) * 100 : 0;
-
-          console.log(`\n📈 CALCULATION SUMMARY:`);
-          console.log(`  Total Story Points (Completed + Incomplete): ${totalStoryPoints} SP`);
-          console.log(`    - Completed: ${completedStoryPoints} SP`);
-          console.log(`    - Incomplete: ${totalStoryPoints - completedStoryPoints} SP`);
-          console.log(`  Scope Creep (Added Mid-Sprint): ${storyPointsAddedDuringSprint} SP`);
-          console.log(`  Initial Planned Points: ${initialSprintStoryPoints} SP`);
-          console.log(`    Formula: ${totalStoryPoints} (total) - ${storyPointsAddedDuringSprint} (added) = ${initialSprintStoryPoints}`);
-          console.log(`  Completed from Initial: ${completedStoryPointsFromInitialIssues} SP`);
-          console.log(`\n📊 COMPLETION RATES:`);
-          console.log(`  Overall Completion Rate: ${overallCompletionRate.toFixed(1)}%`);
-          console.log(`    Formula: (${completedStoryPoints} completed / ${totalStoryPoints} total) × 100`);
-          console.log(`  Initial Work Completion Rate: ${initialWorkCompletionRate.toFixed(1)}%`);
-          console.log(`    Formula: (${completedStoryPointsFromInitialIssues} completed from initial / ${initialSprintStoryPoints} initial planned) × 100`);
-          console.log(`\n🎯 ISSUES SUMMARY:`);
-          console.log(`  Total Issues: ${completedIssues.length + incompleteIssues.length + puntedIssues.length}`);
-          console.log(`    - Completed: ${completedIssues.length}`);
-          console.log(`    - Incomplete: ${incompleteIssues.length}`);
-          console.log(`    - Punted: ${puntedIssues.length}`);
-          console.log(`    - Added During Sprint: ${issuesAddedCount}`);
-
-          // Extract Sprint Goal ticket's original estimate (if exists)
-          let sprintGoalDevDays = undefined;
-          let devDaysSource = 'empty';
-          let sprintGoalTicketKey = undefined;
-          
-          const sprintState = sprintReport.sprint?.state?.toLowerCase();
-          const isActiveSprint = sprintState === 'active';
-          
-          // Skip dev days extraction for active sprints
-          if (isActiveSprint) {
-            devDaysSource = 'active-sprint';
-            console.log(`⏭️ Skipping dev days extraction for active sprint ${sprintId}`);
-          } else {
-            const allIssues = [...completedIssues, ...incompleteIssues, ...puntedIssues];
-            const sprintGoal = sprintReport.sprint?.goal;
-            
-            // Find Sprint Goal ticket by matching sprint goal text in issue summary or checking issue type
-            const sprintGoalTicket = allIssues.find((issue: any) => {
-              // Check if issue type is "Sprint Goal" or similar
-              const issueTypeName = issue.typeName?.toLowerCase() || '';
-              const isSprintGoalType = issueTypeName.includes('sprint goal') || issueTypeName === 'goal';
-              
-              // Also check if issue summary matches the sprint goal
-              const summary = issue.summary?.toLowerCase() || '';
-              const matchesGoal = sprintGoal && summary.includes(sprintGoal.toLowerCase());
-              
-              return isSprintGoalType || matchesGoal;
-            });
-            
-            if (sprintGoalTicket) {
-              sprintGoalTicketKey = sprintGoalTicket.key;
-              
-              // Extract original estimate in seconds and convert to days (8 hours = 1 day)
-              let originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
-                                             sprintGoalTicket.trackingStatistic?.statFieldValue?.value || 0;
-              
-              // Check if we got a valid value from sprint report (should be in seconds, not story points)
-              if (originalEstimateSeconds > 0 && originalEstimateSeconds > 1000) {
-                devDaysSource = 'sprint-goal';
-              } else {
-                // Fallback: If estimation is zero or empty, fetch the issue directly from Jira API
-                try {
-                  console.log(`⚠️ No estimate found in sprint report for ${sprintGoalTicket.key}, fetching directly from Jira API...`);
-                  const issueData = await ApiService.getIssue(authData, sprintGoalTicket.key);
-                  
-                  // Extract original estimate from the issue fields
-                  originalEstimateSeconds = issueData.fields?.timetracking?.originalEstimateSeconds || 0;
-                  if (originalEstimateSeconds > 0) {
-                    devDaysSource = 'sprint-goal-api';
-                  }
-                  console.log(`✅ Fetched original estimate from Jira API: ${originalEstimateSeconds} seconds`);
-                } catch (error) {
-                  console.error(`❌ Failed to fetch issue ${sprintGoalTicket.key} from Jira API:`, (error as Error).message);
-                }
-              }
-              
-              // Convert seconds to days (assuming 8-hour workday = 28800 seconds)
-              if (originalEstimateSeconds > 0) {
-                sprintGoalDevDays = originalEstimateSeconds / 28800; // 8 hours * 60 min * 60 sec = 28800
-              }
-              
-              console.log(`✅ Sprint Goal ticket found for sprint ${sprintId}:`, {
-                key: sprintGoalTicket.key,
-                originalEstimateSeconds,
-                devDays: sprintGoalDevDays,
-                source: devDaysSource
-              });
-            }
-          }
-
-          console.log(`✅ Sprint ${sprintId} (${sprintReport.sprint?.name}) analysis complete!`);
-          console.log(`========================================================\n`);
-
-          return {
-            sprintId,
-            sprint: sprintReport.sprint,
-            completedStoryPoints,
-            totalStoryPoints,
-            completedIssues: completedIssues.length,
-            totalIssues: completedIssues.length + incompleteIssues.length + puntedIssues.length,
-            issuesAddedDuringSprint: issuesAddedCount,
-            puntedIssues: puntedIssues.length,
-            incompleteIssues: incompleteIssues.length,
-            storyPointsAddedDuringSprint,
-            completedStoryPointsFromInitialIssues,
-            initialSprintStoryPoints,
-            overallCompletionRate,
-            initialWorkCompletionRate,
-            devDaysAvailable: sprintGoalDevDays,
-            devDaysSource: devDaysSource,
-            sprintGoalTicketKey: sprintGoalTicketKey,
-            // Store raw data for detailed analysis
-            rawSprintReport: sprintReport
-          };
-        })
-      );
-
-      // Sort sprints by start date (oldest first)
-      const sortedSprintReports = sprintReports.sort((a, b) => {
-        const dateA = a.sprint?.startDate ? new Date(a.sprint.startDate).getTime() : 0;
-        const dateB = b.sprint?.startDate ? new Date(b.sprint.startDate).getTime() : 0;
-        return dateA - dateB;
-      });
-
-      // Calculate aggregate metrics
-      const totalStoryPoints = sortedSprintReports.reduce((sum, sprint) => sum + sprint.completedStoryPoints, 0);
-      const totalSprints = sortedSprintReports.length;
-      const averageVelocity = totalSprints > 0 ? totalStoryPoints / totalSprints : 0;
-      const averageCompletionRate = sortedSprintReports.reduce((sum, sprint) => sum + sprint.overallCompletionRate, 0) / totalSprints;
-
-      const velocityData = {
-        totalSprints,
-        totalStoryPoints,
-        averageVelocity,
-        averageCompletionRate,
-        sprints: sortedSprintReports,
-        // Additional insights
-        insights: {
-          scopeCreepTotal: sortedSprintReports.reduce((sum, sprint) => sum + sprint.storyPointsAddedDuringSprint, 0),
-          averageScopeCreep: sortedSprintReports.reduce((sum, sprint) => sum + sprint.storyPointsAddedDuringSprint, 0) / totalSprints,
-          averageInitialWorkCompletion: sortedSprintReports.reduce((sum, sprint) => sum + sprint.initialWorkCompletionRate, 0) / totalSprints,
-          totalPuntedIssues: sortedSprintReports.reduce((sum, sprint) => sum + sprint.puntedIssues, 0),
-          totalIncompleteIssues: sortedSprintReports.reduce((sum, sprint) => sum + sprint.incompleteIssues, 0)
-        }
-      };
-
-      console.log('🎯 Velocity calculation complete:', {
-        sprints: totalSprints,
-        averageVelocity: averageVelocity.toFixed(1),
-        averageCompletionRate: averageCompletionRate.toFixed(1) + '%'
-      });
-
-      setVelocityData(velocityData);
-    } catch (error) {
-      console.error('❌ Velocity calculation failed:', error);
-      showError(`Error calculating velocity: ${(error as Error).message}`);
-    } finally {
-      setLoadingVelocity(false);
-    }
-  };
-
-  // Handler for updating dev days for a specific sprint
-  const handleDevDaysChange = (sprintId: string, devDays: number) => {
-    if (!velocityData) return;
-    
-    const updatedVelocityData = {
-      ...velocityData,
-      sprints: velocityData.sprints.map((sprint: any) => 
-        sprint.sprintId === sprintId 
-          ? { 
-              ...sprint, 
-              devDaysAvailable: devDays,
-              devDaysSource: 'manual' // Mark as manually changed
-            }
-          : sprint
-      )
-    };
-    
-    setVelocityData(updatedVelocityData);
   };
 
   return (
