@@ -35,9 +35,7 @@ import { theme } from '../theme/theme';
 import { ProjectBoardSelection } from './ProjectBoardSelection';
 import { LoginForm } from './LoginForm';
 import { ConfigurationStatus } from './ConfigurationStatus';
-import { TabNavigation } from './TabNavigation';
 import { VelocityAnalysisDisplay } from './VelocityAnalysisDisplay';
-import { SprintReportDisplay } from './SprintReportDisplay';
 
 // Material-UI Icons
 import LoginIcon from '@mui/icons-material/Login';
@@ -59,7 +57,6 @@ interface SnackbarState {
 }
 
 export function JiraReportApp() {
-  const [activeTab, setActiveTab] = useState(0);
   const [formData, setFormData] = useState<FormDataType>({
     jiraHost: '',
     email: '',
@@ -176,10 +173,6 @@ export function JiraReportApp() {
     const hasEmail = formData.email || appConfig?.hasJiraEmail;
     const hasToken = formData.jiraToken || appConfig?.hasJiraToken;
     return Boolean(hasHost && hasEmail && hasToken);
-  };
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
   };
 
   const handleLogin = async () => {
@@ -645,84 +638,64 @@ export function JiraReportApp() {
                 onBoardChange={handleBoardChange}
               />
 
-              {/* Tab Navigation */}
-              <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+              {/* Team Velocity Section */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <SpeedIcon color="primary" />
+                  Calculate Team Velocity
+                </Typography>
 
-              {/* Sprint Report Tab */}
-              {activeTab === 0 && (
-                <SprintReportDisplay
-                  formData={formData}
-                  sprints={sprints}
-                  loadingSprints={loadingSprints}
-                  isLoading={isLoading}
-                  reportData={reportData}
-                  onInputChange={handleInputChange}
-                  onSprintChange={handleSprintChange}
-                  onGenerateReport={generateReport}
-                  canGenerateReport={canGenerateReport}
-                />
-              )}
-
-              {/* Team Velocity Tab */}
-              {activeTab === 1 && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SpeedIcon color="primary" />
-                    Calculate Team Velocity
-                  </Typography>
-
-                  {/* Multiple Sprint Selection */}
-                  <Autocomplete
-                    multiple
-                    fullWidth
-                    options={sprints}
-                    getOptionLabel={(option) => `${option.name} (${option.state})`}
-                    value={sprints.filter(sprint => 
-                      selectedSprintIds.includes(String(sprint.id))
-                    )}
-                    onChange={(event, newValue) => {
-                      handleSprintSelection(newValue.map(sprint => String(sprint.id)));
-                    }}
-                    disabled={!formData.boardId || loadingSprints}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Select Multiple Sprints"
-                        placeholder="Choose multiple sprints to calculate team velocity"
-                        margin="normal"
-                      />
-                    )}
-                  />
-
-                  {loadingSprints && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                      <CircularProgress size={16} sx={{ mr: 1 }} />
-                      <Typography variant="caption">Loading sprints...</Typography>
-                    </Box>
+                {/* Multiple Sprint Selection */}
+                <Autocomplete
+                  multiple
+                  fullWidth
+                  options={sprints}
+                  getOptionLabel={(option) => `${option.name} (${option.state})`}
+                  value={sprints.filter(sprint => 
+                    selectedSprintIds.includes(String(sprint.id))
                   )}
+                  onChange={(event, newValue) => {
+                    handleSprintSelection(newValue.map(sprint => String(sprint.id)));
+                  }}
+                  disabled={!formData.boardId || loadingSprints}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select Multiple Sprints"
+                      placeholder="Choose multiple sprints to calculate team velocity"
+                      margin="normal"
+                    />
+                  )}
+                />
 
-                  <Box sx={{ mt: 3 }}>
-                    <Button
-                      variant="contained"
-                      size="large"
-                      onClick={calculateVelocity}
-                      disabled={selectedSprintIds.length === 0 || loadingVelocity}
-                      startIcon={loadingVelocity ? <CircularProgress size={20} /> : <SpeedIcon />}
-                      fullWidth
-                    >
-                      {loadingVelocity ? 'Calculating Velocity...' : `Calculate Velocity (${selectedSprintIds.length} sprint${selectedSprintIds.length !== 1 ? 's' : ''} selected)`}
-                    </Button>
+                {loadingSprints && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <CircularProgress size={16} sx={{ mr: 1 }} />
+                    <Typography variant="caption">Loading sprints...</Typography>
                   </Box>
+                )}
 
-                  {/* Velocity Results - Within Team Velocity Tab */}
-                  <VelocityAnalysisDisplay
-                    velocityData={velocityData}
-                    nextSprintDevDays={nextSprintDevDays}
-                    onNextSprintDevDaysChange={setNextSprintDevDays}
-                    onDevDaysChange={handleDevDaysChange}
-                  />
+                <Box sx={{ mt: 3 }}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={calculateVelocity}
+                    disabled={selectedSprintIds.length === 0 || loadingVelocity}
+                    startIcon={loadingVelocity ? <CircularProgress size={20} /> : <SpeedIcon />}
+                    fullWidth
+                  >
+                    {loadingVelocity ? 'Calculating Velocity...' : `Calculate Velocity (${selectedSprintIds.length} sprint${selectedSprintIds.length !== 1 ? 's' : ''} selected)`}
+                  </Button>
                 </Box>
-              )}
+
+                {/* Velocity Results */}
+                <VelocityAnalysisDisplay
+                  velocityData={velocityData}
+                  nextSprintDevDays={nextSprintDevDays}
+                  onNextSprintDevDaysChange={setNextSprintDevDays}
+                  onDevDaysChange={handleDevDaysChange}
+                />
+              </Box>
             </Paper>
           )}
         </Box>
