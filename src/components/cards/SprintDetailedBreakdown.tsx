@@ -1,6 +1,8 @@
-import React from 'react';
-import { Box, Typography, Paper, Tooltip, IconButton, List, ListItem, ListItemText, Chip } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Paper, Tooltip, IconButton, List, ListItem, ListItemText, Chip, LinearProgress, Collapse } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 interface IssueDetail {
   key: string;
@@ -33,6 +35,9 @@ interface SprintDetailedBreakdownProps {
 }
 
 export function SprintDetailedBreakdown({ sprint }: SprintDetailedBreakdownProps) {
+  const [calculationOpen, setCalculationOpen] = useState(true);
+  const [issuesOpen, setIssuesOpen] = useState(false);
+
   const handleCopySummary = () => {
     const issueKeysAdded = sprint.issueDetails?.completed
       .filter(issue => issue.isAddedDuringSprint)
@@ -59,23 +64,119 @@ Issues Added Keys: ${issueKeysAdded.join(', ')}`;
     navigator.clipboard.writeText(summaryText);
   };
 
+  // Calculate commitment reliability score
+  const commitmentReliability = sprint.initialSprintStoryPoints && sprint.initialSprintStoryPoints > 0
+    ? ((sprint.completedStoryPointsFromInitialIssues || 0) / sprint.initialSprintStoryPoints) * 100
+    : 0;
+  
+  // Calculate sprint stability index
+  const sprintStabilityIndex = sprint.totalIssues > 0
+    ? (1 - (sprint.issuesAddedDuringSprint / (sprint.totalIssues + sprint.issuesAddedDuringSprint))) * 100
+    : 100;
+
   return (
     <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
       <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1.5, color: 'primary.main' }}>
         📋 Detailed Breakdown
       </Typography>
 
-      {/* Calculation Summary */}
-      <Box sx={{ mb: 2, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
-          📈 Calculation Summary
+      {/* Sprint Health Score */}
+      <Box sx={{ mb: 2, p: 1.5, bgcolor: '#e3f2fd', borderRadius: 1, border: '1px solid #2196f3' }}>
+        <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1.5, color: 'primary.main' }}>
+          🎯 Sprint Health Score
         </Typography>
+        
+        {/* Commitment Reliability */}
+        <Box sx={{ mb: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 'medium' }}>
+              Commitment Reliability
+              <Tooltip title="How well the team delivers what they committed to at sprint start">
+                <Box component="span" sx={{ ml: 0.5, cursor: 'help', color: 'text.secondary' }}>ⓘ</Box>
+              </Tooltip>
+            </Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold', color: commitmentReliability >= 80 ? 'success.main' : commitmentReliability >= 60 ? 'warning.main' : 'error.main' }}>
+              {commitmentReliability.toFixed(1)}%
+              {commitmentReliability >= 80 && ' 🌟'}
+              {commitmentReliability >= 60 && commitmentReliability < 80 && ' 👍'}
+              {commitmentReliability < 60 && ' 📉'}
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={Math.min(commitmentReliability, 100)} 
+            sx={{ 
+              height: 6, 
+              borderRadius: 1,
+              bgcolor: 'rgba(255,255,255,0.7)',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: commitmentReliability >= 80 ? '#2e7d32' : commitmentReliability >= 60 ? '#ed6c02' : '#d32f2f'
+              }
+            }}
+          />
+        </Box>
+
+        {/* Sprint Stability Index */}
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 'medium' }}>
+              Sprint Stability Index
+              <Tooltip title="Higher is better - indicates fewer scope changes during sprint">
+                <Box component="span" sx={{ ml: 0.5, cursor: 'help', color: 'text.secondary' }}>ⓘ</Box>
+              </Tooltip>
+            </Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold', color: sprintStabilityIndex >= 80 ? 'success.main' : sprintStabilityIndex >= 60 ? 'warning.main' : 'error.main' }}>
+              {sprintStabilityIndex.toFixed(1)}%
+              {sprintStabilityIndex >= 80 && ' ✨'}
+              {sprintStabilityIndex >= 60 && sprintStabilityIndex < 80 && ' ⚡'}
+              {sprintStabilityIndex < 60 && ' ⚠️'}
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={Math.min(sprintStabilityIndex, 100)} 
+            sx={{ 
+              height: 6, 
+              borderRadius: 1,
+              bgcolor: 'rgba(255,255,255,0.7)',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: sprintStabilityIndex >= 80 ? '#1976d2' : sprintStabilityIndex >= 60 ? '#0288d1' : '#ed6c02'
+              }
+            }}
+          />
+        </Box>
+      </Box>
+
+      {/* Calculation Summary with Health Indicators - Collapsible */}
+      <Box sx={{ mb: 2, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+        <Box 
+          sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', mb: calculationOpen ? 1 : 0 }}
+          onClick={() => setCalculationOpen(!calculationOpen)}
+        >
+          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+            📈 Calculation Summary
+          </Typography>
+          <IconButton size="small" sx={{ padding: '2px' }}>
+            {calculationOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+          </IconButton>
+        </Box>
+        <Collapse in={calculationOpen}>
         <Box sx={{ display: 'grid', gap: 0.5, fontSize: '0.75rem' }}>
           <Typography variant="caption">
-            • Total Story Points: <strong>{sprint.totalStoryPoints} SP</strong> (Completed: {sprint.completedStoryPoints} SP, Incomplete: {sprint.totalStoryPoints - sprint.completedStoryPoints} SP)
+            • Total Story Points: <strong>{sprint.totalStoryPoints} SP</strong> (
+            <Box component="span" sx={{ color: 'success.main' }}>Completed: {sprint.completedStoryPoints} SP</Box>, 
+            <Box component="span" sx={{ color: sprint.totalStoryPoints - sprint.completedStoryPoints > 0 ? 'warning.main' : 'text.secondary' }}> Incomplete: {sprint.totalStoryPoints - sprint.completedStoryPoints} SP</Box>)
           </Typography>
           <Typography variant="caption">
-            • Scope Creep: <strong>{sprint.storyPointsAddedDuringSprint} SP</strong> added mid-sprint
+            • Scope Creep: <strong style={{ 
+              color: sprint.storyPointsAddedDuringSprint === 0 ? '#2e7d32' : 
+                     sprint.storyPointsAddedDuringSprint <= 5 ? '#ed6c02' : '#d32f2f' 
+            }}>
+              {sprint.storyPointsAddedDuringSprint} SP
+            </strong> added mid-sprint
+            {sprint.storyPointsAddedDuringSprint === 0 && ' ✅'}
+            {sprint.storyPointsAddedDuringSprint > 0 && sprint.storyPointsAddedDuringSprint <= 5 && ' ⚠️'}
+            {sprint.storyPointsAddedDuringSprint > 5 && ' 🚨'}
           </Typography>
           <Typography variant="caption">
             • Initial Planned Points: <strong>{sprint.initialSprintStoryPoints || 0} SP</strong>
@@ -84,28 +185,73 @@ Issues Added Keys: ${issueKeysAdded.join(', ')}`;
             Formula: {sprint.totalStoryPoints} (total) - {sprint.storyPointsAddedDuringSprint} (added) = {sprint.initialSprintStoryPoints || 0}
           </Typography>
           <Typography variant="caption">
-            • Completed from Initial: <strong>{sprint.completedStoryPointsFromInitialIssues || 0} SP</strong>
+            • Completed from Initial: <strong style={{ 
+              color: sprint.initialWorkCompletionRate >= 80 ? '#1976d2' : 
+                     sprint.initialWorkCompletionRate >= 60 ? '#ed6c02' : '#d32f2f' 
+            }}>
+              {sprint.completedStoryPointsFromInitialIssues || 0} SP
+            </strong> ({sprint.initialWorkCompletionRate.toFixed(0)}% of planned)
+            {sprint.initialWorkCompletionRate >= 80 && ' 🎯'}
           </Typography>
         </Box>
+        </Collapse>
       </Box>
 
-      {/* Completion Rates */}
+      {/* Completion Rates with Progress Bars */}
       <Box sx={{ mb: 2, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
+        <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1.5 }}>
           📊 Completion Rates
         </Typography>
-        <Box sx={{ display: 'grid', gap: 0.5, fontSize: '0.75rem' }}>
-          <Typography variant="caption">
-            • Overall: <strong>{sprint.overallCompletionRate.toFixed(1)}%</strong>
+        
+        {/* Overall Completion */}
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption">Overall Completion</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+              {sprint.overallCompletionRate.toFixed(1)}%
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={Math.min(sprint.overallCompletionRate, 100)} 
+            sx={{ 
+              height: 8, 
+              borderRadius: 1,
+              bgcolor: 'rgba(0,0,0,0.1)',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: sprint.overallCompletionRate >= 80 ? '#2e7d32' : 
+                         sprint.overallCompletionRate >= 60 ? '#ed6c02' : '#d32f2f'
+              }
+            }}
+          />
+          <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', display: 'block', mt: 0.5 }}>
+            {sprint.completedStoryPoints} completed / {sprint.totalStoryPoints} total SP
           </Typography>
-          <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.secondary', pl: 2 }}>
-            ({sprint.completedStoryPoints} completed / {sprint.totalStoryPoints} total) × 100
-          </Typography>
-          <Typography variant="caption">
-            • Initial Work: <strong>{sprint.initialWorkCompletionRate.toFixed(1)}%</strong>
-          </Typography>
-          <Typography variant="caption" sx={{ fontStyle: 'italic', color: 'text.secondary', pl: 2 }}>
-            ({sprint.completedStoryPointsFromInitialIssues || 0} from initial / {sprint.initialSprintStoryPoints || 0} planned) × 100
+        </Box>
+
+        {/* Initial Work Completion */}
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption">Initial Work Completion</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+              {sprint.initialWorkCompletionRate.toFixed(1)}%
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={Math.min(sprint.initialWorkCompletionRate, 100)} 
+            sx={{ 
+              height: 8, 
+              borderRadius: 1,
+              bgcolor: 'rgba(0,0,0,0.1)',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: sprint.initialWorkCompletionRate >= 80 ? '#1976d2' : 
+                         sprint.initialWorkCompletionRate >= 60 ? '#0288d1' : '#ed6c02'
+              }
+            }}
+          />
+          <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'text.secondary', display: 'block', mt: 0.5 }}>
+            {sprint.completedStoryPointsFromInitialIssues || 0} completed / {sprint.initialSprintStoryPoints || 0} planned SP
           </Typography>
         </Box>
       </Box>
@@ -148,8 +294,21 @@ Issues Punted: ${sprint.puntedIssues}`}
         </Paper>
       </Box>
 
-      {/* Issue Details */}
+      {/* Issue Details - Collapsible */}
       {sprint.issueDetails && (
+        <Box sx={{ mb: 2, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+          <Box 
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', mb: issuesOpen ? 1 : 0 }}
+            onClick={() => setIssuesOpen(!issuesOpen)}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+              📝 Issue Details ({sprint.completedIssues + sprint.incompleteIssues + sprint.puntedIssues} total)
+            </Typography>
+            <IconButton size="small" sx={{ padding: '2px' }}>
+              {issuesOpen ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            </IconButton>
+          </Box>
+          <Collapse in={issuesOpen}>
         <>
           {sprint.issueDetails.completed.length > 0 && (
             <Box sx={{ mb: 1.5 }}>
@@ -220,6 +379,8 @@ Issues Punted: ${sprint.puntedIssues}`}
             </Box>
           )}
         </>
+          </Collapse>
+        </Box>
       )}
 
       {/* Issues Summary */}
