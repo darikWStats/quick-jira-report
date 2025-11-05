@@ -381,6 +381,9 @@ export function JiraReportApp() {
 
           // Extract Sprint Goal ticket's original estimate (if exists)
           let sprintGoalDevDays = undefined;
+          let devDaysSource = 'empty';
+          let sprintGoalTicketKey = undefined;
+          
           const allIssues = [...completedIssues, ...incompleteIssues, ...puntedIssues];
           const sprintGoal = sprintReport.sprint?.goal;
           
@@ -398,18 +401,26 @@ export function JiraReportApp() {
           });
           
           if (sprintGoalTicket) {
+            sprintGoalTicketKey = sprintGoalTicket.key;
+            
             // Extract original estimate in seconds and convert to days (8 hours = 1 day)
             let originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
                                            sprintGoalTicket.trackingStatistic?.statFieldValue?.value || 0;
             
-            // Fallback: If estimation is zero or empty, fetch the issue directly from Jira API
-            if (!originalEstimateSeconds || originalEstimateSeconds === 0) {
+            // Check if we got a value from sprint report
+            if (originalEstimateSeconds > 0) {
+              devDaysSource = 'sprint-goal';
+            } else {
+              // Fallback: If estimation is zero or empty, fetch the issue directly from Jira API
               try {
                 console.log(`⚠️ No estimate found in sprint report for ${sprintGoalTicket.key}, fetching directly from Jira API...`);
                 const issueData = await ApiService.getIssue(authData, sprintGoalTicket.key);
                 
                 // Extract original estimate from the issue fields
                 originalEstimateSeconds = issueData.fields?.timetracking?.originalEstimateSeconds || 0;
+                if (originalEstimateSeconds > 0) {
+                  devDaysSource = 'sprint-goal-api';
+                }
                 console.log(`✅ Fetched original estimate from Jira API: ${originalEstimateSeconds} seconds`);
               } catch (error) {
                 console.error(`❌ Failed to fetch issue ${sprintGoalTicket.key} from Jira API:`, (error as Error).message);
@@ -424,7 +435,8 @@ export function JiraReportApp() {
             console.log(`✅ Sprint Goal ticket found for sprint ${sprintId}:`, {
               key: sprintGoalTicket.key,
               originalEstimateSeconds,
-              devDays: sprintGoalDevDays
+              devDays: sprintGoalDevDays,
+              source: devDaysSource
             });
           }
 
@@ -451,6 +463,8 @@ export function JiraReportApp() {
             overallCompletionRate,
             initialWorkCompletionRate,
             devDaysAvailable: sprintGoalDevDays,
+            devDaysSource: devDaysSource,
+            sprintGoalTicketKey: sprintGoalTicketKey,
             // Store raw data for detailed analysis
             rawSprintReport: sprintReport
           };
@@ -509,7 +523,11 @@ export function JiraReportApp() {
       ...velocityData,
       sprints: velocityData.sprints.map((sprint: any) => 
         sprint.sprintId === sprintId 
-          ? { ...sprint, devDaysAvailable: devDays }
+          ? { 
+              ...sprint, 
+              devDaysAvailable: devDays,
+              devDaysSource: 'manual' // Mark as manually changed
+            }
           : sprint
       )
     };

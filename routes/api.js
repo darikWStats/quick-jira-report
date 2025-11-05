@@ -213,6 +213,9 @@ router.post('/velocity-report', async (req, res) => {
           
           // Extract Sprint Goal ticket's original estimate (if exists)
           let sprintGoalDevDays = undefined;
+          let devDaysSource = 'empty';
+          let sprintGoalTicketKey = undefined;
+          
           const allIssues = [...completedIssues, ...incompleteIssues, ...puntedIssues];
           const sprintGoal = sprintReport.sprint?.goal;
           
@@ -230,12 +233,17 @@ router.post('/velocity-report', async (req, res) => {
           });
           
           if (sprintGoalTicket) {
+            sprintGoalTicketKey = sprintGoalTicket.key;
+            
             // Extract original estimate in seconds and convert to days (8 hours = 1 day)
             let originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
                                            sprintGoalTicket.trackingStatistic?.statFieldValue?.value || 0;
             
-            // Fallback: If estimation is zero or empty, fetch the issue directly from Jira API
-            if (!originalEstimateSeconds || originalEstimateSeconds === 0) {
+            // Check if we got a value from sprint report
+            if (originalEstimateSeconds > 0) {
+              devDaysSource = 'sprint-goal';
+            } else {
+              // Fallback: If estimation is zero or empty, fetch the issue directly from Jira API
               try {
                 console.log(`⚠️ No estimate found in sprint report for ${sprintGoalTicket.key}, fetching directly from Jira API...`);
                 const issueData = await jiraService.getIssue({
@@ -245,6 +253,9 @@ router.post('/velocity-report', async (req, res) => {
                 
                 // Extract original estimate from the issue fields
                 originalEstimateSeconds = issueData.fields?.timetracking?.originalEstimateSeconds || 0;
+                if (originalEstimateSeconds > 0) {
+                  devDaysSource = 'sprint-goal-api';
+                }
                 console.log(`✅ Fetched original estimate from Jira API: ${originalEstimateSeconds} seconds`);
               } catch (error) {
                 console.error(`❌ Failed to fetch issue ${sprintGoalTicket.key} from Jira API:`, error.message);
@@ -259,7 +270,8 @@ router.post('/velocity-report', async (req, res) => {
             console.log(`Sprint Goal ticket found for sprint ${sprintId}:`, {
               key: sprintGoalTicket.key,
               originalEstimateSeconds,
-              devDays: sprintGoalDevDays
+              devDays: sprintGoalDevDays,
+              source: devDaysSource
             });
           }
           
@@ -270,7 +282,9 @@ router.post('/velocity-report', async (req, res) => {
             totalStoryPoints: actualSprintTotalPoints, // Use calculated actual sprint scope
             completedIssues: completedIssues.length,
             totalIssues: completedIssues.length + incompleteIssues.length + puntedIssues.length,
-            devDaysAvailable: sprintGoalDevDays
+            devDaysAvailable: sprintGoalDevDays,
+            devDaysSource: devDaysSource,
+            sprintGoalTicketKey: sprintGoalTicketKey
           };
         } catch (error) {
           console.error(`Error fetching sprint ${sprintId}:`, error);

@@ -5,8 +5,11 @@ import {
   Card,
   CardContent,
   Chip,
-  TextField
+  TextField,
+  Tooltip,
+  IconButton
 } from '@mui/material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 interface Sprint {
   sprintId: string;
@@ -27,6 +30,8 @@ interface Sprint {
   devDaysAvailable?: number;
   completedStoryPointsFromInitialIssues?: number;
   initialSprintStoryPoints?: number;
+  devDaysSource?: 'sprint-goal' | 'sprint-goal-api' | 'manual' | 'empty';
+  sprintGoalTicketKey?: string;
 }
 
 interface SprintBreakdownCardsProps {
@@ -158,6 +163,31 @@ export function SprintBreakdownCards({ sprints, onDevDaysChange }: SprintBreakdo
                   <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                     days
                   </Typography>
+                  <Tooltip 
+                    title={
+                      sprint.devDaysSource === 'sprint-goal' 
+                        ? `Auto-filled from Sprint Goal ticket (${sprint.sprintGoalTicketKey || 'unknown'}) original estimate in sprint report`
+                        : sprint.devDaysSource === 'sprint-goal-api'
+                        ? `Auto-filled from Sprint Goal ticket (${sprint.sprintGoalTicketKey || 'unknown'}) via Jira API (fallback - not found in sprint report)`
+                        : sprint.devDaysSource === 'manual'
+                        ? 'Manually entered value'
+                        : 'No Sprint Goal ticket found. Please enter manually.'
+                    }
+                    arrow
+                    placement="top"
+                  >
+                    <IconButton 
+                      size="small" 
+                      sx={{ 
+                        padding: '2px',
+                        color: sprint.devDaysSource === 'sprint-goal' || sprint.devDaysSource === 'sprint-goal-api' 
+                          ? 'info.main' 
+                          : 'text.secondary'
+                      }}
+                    >
+                      <InfoOutlinedIcon sx={{ fontSize: '16px' }} />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
               </Box>
             </CardContent>
