@@ -54,7 +54,16 @@ export function useProjectData({
           jiraToken: formData.jiraToken
         };
         const boardsData = await ApiService.getBoards(authData, selectedProject?.key);
-        setBoards(boardsData.boards || []);
+        const fetchedBoards = boardsData.boards || [];
+        setBoards(fetchedBoards);
+        
+        // Auto-select board if there's only one
+        if (fetchedBoards.length === 1) {
+          const boardId = String(fetchedBoards[0].id);
+          setFormData(prev => ({ ...prev, boardId }));
+          // Also fetch sprints for the auto-selected board
+          await handleBoardChange(boardId);
+        }
       } catch (error) {
         showError(`Error fetching boards: ${(error as Error).message}`);
       } finally {
