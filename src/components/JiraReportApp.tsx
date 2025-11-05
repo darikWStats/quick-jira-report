@@ -379,10 +379,46 @@ export function JiraReportApp() {
           const initialWorkCompletionRate = initialSprintStoryPoints > 0 ? 
             (completedStoryPointsFromInitialIssues / initialSprintStoryPoints) * 100 : 0;
 
+          // Extract Sprint Goal ticket's original estimate (if exists)
+          let sprintGoalDevDays = undefined;
+          const allIssues = [...completedIssues, ...incompleteIssues, ...puntedIssues];
+          const sprintGoal = sprintReport.sprint?.goal;
+          
+          // Find Sprint Goal ticket by matching sprint goal text in issue summary or checking issue type
+          const sprintGoalTicket = allIssues.find((issue: any) => {
+            // Check if issue type is "Sprint Goal" or similar
+            const issueTypeName = issue.typeName?.toLowerCase() || '';
+            const isSprintGoalType = issueTypeName.includes('sprint goal') || issueTypeName === 'goal';
+            
+            // Also check if issue summary matches the sprint goal
+            const summary = issue.summary?.toLowerCase() || '';
+            const matchesGoal = sprintGoal && summary.includes(sprintGoal.toLowerCase());
+            
+            return isSprintGoalType || matchesGoal;
+          });
+          
+          if (sprintGoalTicket) {
+            // Extract original estimate in seconds and convert to days (8 hours = 1 day)
+            const originalEstimateSeconds = sprintGoalTicket.estimateStatistic?.statFieldValue?.value || 
+                                           sprintGoalTicket.trackingStatistic?.statFieldValue?.value || 0;
+            
+            // Convert seconds to days (assuming 8-hour workday = 28800 seconds)
+            if (originalEstimateSeconds > 0) {
+              sprintGoalDevDays = originalEstimateSeconds / 28800; // 8 hours * 60 min * 60 sec = 28800
+            }
+            
+            console.log(`✅ Sprint Goal ticket found for sprint ${sprintId}:`, {
+              key: sprintGoalTicket.key,
+              originalEstimateSeconds,
+              devDays: sprintGoalDevDays
+            });
+          }
+
           console.log(`✅ Sprint ${sprintId} analysis complete:`, {
             completedStoryPoints,
             totalStoryPoints,
-            overallCompletionRate: overallCompletionRate.toFixed(1) + '%'
+            overallCompletionRate: overallCompletionRate.toFixed(1) + '%',
+            devDaysAvailable: sprintGoalDevDays
           });
 
           return {
@@ -400,6 +436,7 @@ export function JiraReportApp() {
             initialSprintStoryPoints,
             overallCompletionRate,
             initialWorkCompletionRate,
+            devDaysAvailable: sprintGoalDevDays,
             // Store raw data for detailed analysis
             rawSprintReport: sprintReport
           };

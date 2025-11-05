@@ -25,6 +25,8 @@ interface Sprint {
   puntedIssues: number;
   incompleteIssues: number;
   devDaysAvailable?: number;
+  completedStoryPointsFromInitialIssues?: number;
+  initialSprintStoryPoints?: number;
 }
 
 interface SprintBreakdownCardsProps {
@@ -76,6 +78,14 @@ export function SprintBreakdownCards({ sprints, onDevDaysChange }: SprintBreakdo
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'info.main', lineHeight: 1.2 }}>
                     {sprint.initialWorkCompletionRate.toFixed(1)}%
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                    Initial SP
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'secondary.main', lineHeight: 1.2 }}>
+                    {sprint.completedStoryPointsFromInitialIssues || 0}/{sprint.initialSprintStoryPoints || 0}
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>

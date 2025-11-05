@@ -27,6 +27,8 @@ interface Sprint {
   puntedIssues: number;
   incompleteIssues: number;
   devDaysAvailable?: number;
+  completedStoryPointsFromInitialIssues?: number;
+  initialSprintStoryPoints?: number;
 }
 
 interface VelocityInsights {
