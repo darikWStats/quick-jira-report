@@ -36,7 +36,7 @@ export function ProductivityAnalysis({
   }
 
   return (
-    <Box sx={{ mb: 4 }}>
+    <Box sx={{ mb: 3 }}>
       <Typography variant="h6" sx={{ mb: 2, color: 'primary.main' }}>
         ⚡ Productivity Analysis
       </Typography>
