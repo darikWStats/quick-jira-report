@@ -337,7 +337,7 @@ router.post('/velocity-report', async (req, res) => {
             completedStoryPoints: sprintReport.contents?.completedIssuesEstimateSum?.value || 0,
             totalStoryPoints: actualSprintTotalPoints, // Use calculated actual sprint scope
             completedIssues: completedIssues.length,
-            totalIssues: completedIssues.length + incompleteIssues.length + puntedIssues.length,
+            totalIssues: completedIssues.length + incompleteIssues.length, // Exclude punted issues
             devDaysAvailable: sprintGoalDevDays,
             devDaysSource: devDaysSource,
             sprintGoalTicketKey: sprintGoalTicketKey,

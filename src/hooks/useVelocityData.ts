@@ -82,7 +82,11 @@ export function useVelocityData({
           const incompleteIssues = sprintReport.contents?.issuesNotCompletedInCurrentSprint || [];
           
           const completedStoryPoints = sprintReport.contents?.completedIssuesEstimateSum?.value || 0;
-          const issuesAddedCount = Object.keys(issueKeysAddedDuringSprint).length;
+          
+          // Count issues added during sprint (excluding punted issues)
+          const issuesAddedCount = [...completedIssues, ...incompleteIssues]
+            .filter((issue: any) => !!issueKeysAddedDuringSprint[issue.key])
+            .length;
           
           let actualSprintTotalPoints = 0;
           let storyPointsAddedDuringSprint = 0;
@@ -210,7 +214,7 @@ export function useVelocityData({
             completedStoryPoints,
             totalStoryPoints,
             completedIssues: completedIssues.length,
-            totalIssues: completedIssues.length + incompleteIssues.length + puntedIssues.length,
+            totalIssues: completedIssues.length + incompleteIssues.length, // Exclude punted issues
             issuesAddedDuringSprint: issuesAddedCount,
             puntedIssues: puntedIssues.length,
             incompleteIssues: incompleteIssues.length,

@@ -390,7 +390,7 @@ Issues Punted: ${sprint.puntedIssues}`}
         </Typography>
         <Box sx={{ display: 'grid', gap: 0.5, fontSize: '0.75rem' }}>
           <Typography variant="caption">
-            • Total Issues: <strong>{sprint.totalIssues + sprint.puntedIssues}</strong>
+            • Total Issues in Sprint: <strong>{sprint.totalIssues}</strong>
           </Typography>
           <Typography variant="caption" sx={{ pl: 2 }}>
             - Completed: {sprint.completedIssues}
@@ -399,10 +399,10 @@ Issues Punted: ${sprint.puntedIssues}`}
             - Incomplete: {sprint.incompleteIssues}
           </Typography>
           <Typography variant="caption" sx={{ pl: 2 }}>
-            - Punted: {sprint.puntedIssues}
-          </Typography>
-          <Typography variant="caption" sx={{ pl: 2 }}>
             - Added During Sprint: {sprint.issuesAddedDuringSprint}
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+            • Punted/Removed Issues: <strong>{sprint.puntedIssues}</strong> (excluded from totals)
           </Typography>
         </Box>
       </Box>
