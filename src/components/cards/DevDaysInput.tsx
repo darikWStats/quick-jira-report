@@ -1,18 +1,21 @@
 import React from 'react';
-import { Box, Typography, TextField, Tooltip, IconButton } from '@mui/material';
+import { Box, Typography, TextField, Tooltip, IconButton, Link } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 interface DevDaysInputProps {
   devDaysAvailable: number | undefined;
   devDaysSource?: 'sprint-goal' | 'sprint-goal-api' | 'manual' | 'empty' | 'active-sprint';
   sprintGoalTicketKey?: string;
+  jiraHost?: string;
   onDevDaysChange: (value: number) => void;
 }
 
 export function DevDaysInput({ 
   devDaysAvailable,
   devDaysSource, 
-  sprintGoalTicketKey, 
+  sprintGoalTicketKey,
+  jiraHost,
   onDevDaysChange 
 }: DevDaysInputProps) {
   const getTooltipText = () => {
@@ -31,6 +34,8 @@ export function DevDaysInput({
   };
 
   const isAutoFilled = devDaysSource === 'sprint-goal' || devDaysSource === 'sprint-goal-api';
+  const hasSprintGoal = sprintGoalTicketKey && jiraHost;
+  const sprintGoalUrl = hasSprintGoal ? `${jiraHost}/browse/${sprintGoalTicketKey}` : '';
 
   return (
     <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid #e0e0e0' }}>
@@ -71,6 +76,27 @@ export function DevDaysInput({
             <InfoOutlinedIcon sx={{ fontSize: '16px' }} />
           </IconButton>
         </Tooltip>
+        {hasSprintGoal && (
+          <Link
+            href={sprintGoalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              textDecoration: 'none',
+              fontSize: '0.75rem',
+              color: 'primary.main',
+              '&:hover': {
+                textDecoration: 'underline'
+              }
+            }}
+          >
+            {sprintGoalTicketKey}
+            <OpenInNewIcon sx={{ fontSize: '14px' }} />
+          </Link>
+        )}
       </Box>
     </Box>
   );

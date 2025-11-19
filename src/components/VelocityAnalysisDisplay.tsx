@@ -50,13 +50,15 @@ interface VelocityData {
 interface VelocityAnalysisDisplayProps {
   velocityData: VelocityData | null;
   nextSprintDevDays: number;
+  jiraHost: string;
   onNextSprintDevDaysChange: (value: number) => void;
   onDevDaysChange: (sprintId: string, devDays: number) => void;
 }
 
 export function VelocityAnalysisDisplay({ 
   velocityData, 
-  nextSprintDevDays, 
+  nextSprintDevDays,
+  jiraHost,
   onNextSprintDevDaysChange, 
   onDevDaysChange 
 }: VelocityAnalysisDisplayProps) {
@@ -379,6 +381,7 @@ export function VelocityAnalysisDisplay({
       {/* Sprint Breakdown */}
       <SprintBreakdownCards
         sprints={velocityData.sprints}
+        jiraHost={jiraHost}
         onDevDaysChange={onDevDaysChange}
       />
     </Paper>

@@ -45,11 +45,12 @@ interface SprintCardProps {
   sprint: Sprint;
   index: number;
   isExpanded: boolean;
+  jiraHost: string;
   onToggleExpand: (sprintId: string) => void;
   onDevDaysChange: (sprintId: string, devDays: number) => void;
 }
 
-export function SprintCard({ sprint, index, isExpanded, onToggleExpand, onDevDaysChange }: SprintCardProps) {
+export function SprintCard({ sprint, index, isExpanded, jiraHost, onToggleExpand, onDevDaysChange }: SprintCardProps) {
   return (
     <Card key={sprint.sprintId} variant="outlined" sx={{ border: '1px solid #e0e0e0' }}>
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
@@ -99,6 +100,7 @@ export function SprintCard({ sprint, index, isExpanded, onToggleExpand, onDevDay
             devDaysAvailable={sprint.devDaysAvailable}
             devDaysSource={sprint.devDaysSource}
             sprintGoalTicketKey={sprint.sprintGoalTicketKey}
+            jiraHost={jiraHost}
             onDevDaysChange={(value: number) => onDevDaysChange(sprint.sprintId, value)}
           />
         </Box>

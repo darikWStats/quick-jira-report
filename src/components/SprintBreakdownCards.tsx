@@ -39,10 +39,11 @@ interface Sprint {
 
 interface SprintBreakdownCardsProps {
   sprints: Sprint[];
+  jiraHost: string;
   onDevDaysChange: (sprintId: string, devDays: number) => void;
 }
 
-export function SprintBreakdownCards({ sprints, onDevDaysChange }: SprintBreakdownCardsProps) {
+export function SprintBreakdownCards({ sprints, jiraHost, onDevDaysChange }: SprintBreakdownCardsProps) {
   const [expandedSprints, setExpandedSprints] = useState<Set<string>>(new Set());
 
   const toggleExpand = (sprintId: string) => {
@@ -69,6 +70,7 @@ export function SprintBreakdownCards({ sprints, onDevDaysChange }: SprintBreakdo
             sprint={sprint}
             index={index}
             isExpanded={expandedSprints.has(sprint.sprintId)}
+            jiraHost={jiraHost}
             onToggleExpand={toggleExpand}
             onDevDaysChange={onDevDaysChange}
           />

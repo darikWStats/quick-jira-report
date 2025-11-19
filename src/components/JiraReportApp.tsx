@@ -201,6 +201,7 @@ export function JiraReportApp() {
                 <VelocityAnalysisDisplay
                   velocityData={velocityData}
                   nextSprintDevDays={nextSprintDevDays}
+                  jiraHost={formData.jiraHost}
                   onNextSprintDevDaysChange={setNextSprintDevDays}
                   onDevDaysChange={handleDevDaysChange}
                 />
