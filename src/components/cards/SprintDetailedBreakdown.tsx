@@ -59,8 +59,7 @@ Initial Work Completion: ${sprint.initialWorkCompletionRate.toFixed(2)}%
 ─────────────────────────────────
 Issues Added During Sprint: ${sprint.issuesAddedDuringSprint}
 Issues Not Completed: ${sprint.incompleteIssues}
-Issues Punted: ${sprint.puntedIssues}
-Issues Added Keys: ${issueKeysAdded.join(', ')}`;
+Issues Punted: ${sprint.puntedIssues}`;
     navigator.clipboard.writeText(summaryText);
   };
 

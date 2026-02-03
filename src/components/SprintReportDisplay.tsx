@@ -716,8 +716,7 @@ Initial Work Completion: ${initialWorkCompletionPercentage.toFixed(2)}%
 ─────────────────────────────────
 Issues Added During Sprint: ${issuesAddedCount}
 Issues Not Completed: ${incompleteIssues.length}
-Issues Punted: ${puntedIssues.length}
-Issues Added Keys: ${issueKeysAdded.join(', ')}`;
+Issues Punted: ${puntedIssues.length}`;
                               navigator.clipboard.writeText(summaryText);
                             }}
                           >
@@ -746,8 +745,7 @@ Initial Work Completion: ${initialWorkCompletionPercentage.toFixed(2)}%
 
 Issues Added During Sprint: ${issuesAddedCount}
 Issues Not Completed: ${incompleteIssues.length}
-Issues Punted: ${puntedIssues.length}
-Issues Added Keys: ${[...completedIssues, ...incompleteIssues].filter(issue => !!issueKeysAddedDuringSprint[issue.key]).map(issue => issue.key).join(', ')}`}
+Issues Punted: ${puntedIssues.length}`}
                         </Typography>
                       </Paper>
                     </CardContent>
